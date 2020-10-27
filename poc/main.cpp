@@ -12,13 +12,13 @@
 #include <stdint.h>
 
 using namespace std;
-static QGuiApplication *app=nullptr;
 typedef int (*func_t)(void);
 typedef int* (*getInstance)(void);
 typedef void (*sendUpdate)(void*, ...);
 uint64_t ADDR = 0x178E8;
 uint64_t getInstanceADDR = 0x224BC;
 uint64_t sendUpdateADDR = 0x2257C;
+uint64_t buffer = 0x41790;
 extern "C" {
 static void _libhook_init() __attribute__((constructor));
 static void _libhook_init() { printf("LIBHOOK INIT\n"); }
@@ -26,19 +26,21 @@ static void _libhook_init() { printf("LIBHOOK INIT\n"); }
 int main(int argc, char **argv, char **envp) {
   qputenv("QMLSCENE_DEVICE", "epaper");
   qputenv("QT_QPA_PLATFORM", "epaper:enable_fonts");
-
-  app = new QGuiApplication(argc, argv);
+  //needed for qpainter
+  QGuiApplication app(argc, argv);
   printf("OUR MAIN\n");
   auto *instance = ((getInstance)getInstanceADDR)();
   printf("got instance\n");
   QRect rect(0,0,1404,1872);
   printf("getting painter\n");
-  //QPainter *painter  = (QPainter*) ((QPaintDevice*) instance+4)->paintEngine();
-  //printf("result %d\n", painter);
-  //painter->drawText(10,10,"tst");
+  QPainter painter((QPaintDevice*)buffer);
+  printf("after ctor\n");
+  painter.drawText(rect, 132,"Testing...");
+  painter.end();
   printf("Sending update\n");
-  ((sendUpdate)sendUpdateADDR)(instance, rect, 2,3);
-  //((func_t)ADDR)();
+
+  //first param is ignored
+  ((sendUpdate)sendUpdateADDR)(0, rect, 1,3);
   printf("the other one finished");
 }
 
