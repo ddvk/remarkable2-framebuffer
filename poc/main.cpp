@@ -12,13 +12,33 @@
 #include <stdint.h>
 
 using namespace std;
-typedef int (*func_t)(void);
-typedef int* (*getInstance)(void);
-typedef void (*sendUpdate)(void*, ...);
-uint64_t ADDR = 0x178E8;
-uint64_t getInstanceADDR = 0x224BC;
-uint64_t sendUpdateADDR = 0x2257C;
-uint64_t buffer = 0x41790;
+
+class FBStuff {
+    public:
+        FBStuff(){
+            instance = getInstance();
+        }
+
+        void DrawText(char *text) {
+              QRect rect(100,100,200,100);
+              QPainter painter((QPaintDevice*)(instance+8));
+              printf("after ctor\n");
+              painter.drawText(rect, 132,text);
+              painter.end();
+              printf("Sending update\n");
+              sendUpdate(0, rect, 0,10);
+        }
+
+
+    private:
+        uint32_t* instance;
+
+        //black magic
+        uint32_t* (*getInstance)(void) = (uint32_t*(*)(void)) 0x224BC;
+        void (*sendUpdate)(void*, ...) = (void (*)(void*,...)) 0x2257C;
+};
+
+
 extern "C" {
 static void _libhook_init() __attribute__((constructor));
 static void _libhook_init() { printf("LIBHOOK INIT\n"); }
@@ -29,19 +49,17 @@ int main(int argc, char **argv, char **envp) {
   //needed for qpainter
   QGuiApplication app(argc, argv);
   printf("OUR MAIN\n");
-  auto *instance = ((getInstance)getInstanceADDR)();
+  //auto instance = getInstance();
   printf("got instance\n");
-  QRect rect(0,0,1404,1872);
   printf("getting painter\n");
-  QPainter painter((QPaintDevice*)buffer);
-  printf("after ctor\n");
-  painter.drawText(rect, 132,"Testing...");
-  painter.end();
-  printf("Sending update\n");
 
-  //first param is ignored
-  ((sendUpdate)sendUpdateADDR)(0, rect, 1,3);
-  printf("the other one finished");
+  FBStuff stuff;
+  stuff.DrawText("Testing");
+
+  //QImage or something
+
+  //first param is ignored,rect, waveform, ?
+  printf("END of our main\n");
 }
 
 int __libc_start_main(int (*_main)(int, char **, char **), int argc,
