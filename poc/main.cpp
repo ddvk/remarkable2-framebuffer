@@ -8,6 +8,11 @@
 #define _GNU_SOURCE
 #endif
 
+#include "msgq.cpp"
+
+int msg_q_id = 0x2257c;
+ipc::Queue MSGQ(msg_q_id);
+
 #include <dlfcn.h>
 #include <stdint.h>
 
@@ -59,7 +64,10 @@ int main(int argc, char **argv, char **envp) {
       stuff.DrawText(i, "Testing", false);
   }
   stuff.DrawText(1800, "Done", true);
-  //first param is ignored,rect, waveform, ?
+
+  while (true) {
+    ipc::msgbuf buf = MSGQ.recv();
+  }
   printf("END of our main\n");
 }
 
