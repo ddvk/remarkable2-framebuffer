@@ -19,9 +19,9 @@ ipc::Queue MSGQ(msg_q_id);
 using namespace std;
 
 // todo: make it singleton
-class FBStuff {
+class SwtFB {
 public:
-  FBStuff() {
+  SwtFB() {
     qputenv("QMLSCENE_DEVICE", "epaper");
     qputenv("QT_QPA_PLATFORM", "epaper:enable_fonts");
 
@@ -56,11 +56,11 @@ static void _libhook_init() __attribute__((constructor));
 static void _libhook_init() { printf("LIBHOOK INIT\n"); }
 
 int main(int argc, char **argv, char **envp) {
-  FBStuff stuff;
+  SwtFB fb;
   for (int i = 0; i < 1000; i += 50) {
-    stuff.DrawText(i, "Testing", false);
+    fb.DrawText(i, "Testing", false);
   }
-  stuff.DrawText(1800, "Done", true);
+  fb.DrawText(1800, "Done", true);
 
   printf("WAITING FOR SEND UPDATE ON MSG Q");
   while (true) {
