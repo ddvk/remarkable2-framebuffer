@@ -1,9 +1,13 @@
+#include <fcntl.h>
 #include <iostream>
 #include <string.h>
 #include <string>
 #include <sys/ipc.h>
+#include <sys/mman.h>
 #include <sys/msg.h>
+#include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include <linux/limits.h>
 
@@ -22,6 +26,20 @@ struct msgbuf {
     (void)0;
   }
 };
+
+int BUF_SIZE=0x165800; // hardcoded size of display mem for rM2
+static char* get_shared_buffer(string name="/swtfb.01") {
+  int fd = shm_open(name.c_str(), O_RDWR | O_CREAT, S_IRWXU);
+  if (fd == -1 && errno == 13) {
+    fd = shm_open(name.c_str(), O_RDWR, S_IRWXU);
+  }
+  printf("SHM FD: %i, errno: %i\n", fd, errno);
+
+  ftruncate(fd, BUF_SIZE);
+  char* mem = (char*) mmap(NULL, BUF_SIZE, PROT_WRITE, MAP_SHARED, fd, 0);
+  printf("OPENED SHARED MEM: %s\n", name.c_str());
+  return mem;
+}
 
 class Queue {
 public:
