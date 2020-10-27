@@ -13,25 +13,35 @@
 
 using namespace std;
 
+//todo: make it singleton
 class FBStuff {
     public:
         FBStuff(){
+            qputenv("QMLSCENE_DEVICE", "epaper");
+            qputenv("QT_QPA_PLATFORM", "epaper:enable_fonts");
+
+            //needed for qpainter
+            char *argv[0];
+            int argc = 0;
+            app = new QGuiApplication(argc,argv);
             instance = getInstance();
         }
 
-        void DrawText(char *text) {
-              QRect rect(100,100,200,100);
+        void DrawText(int i, char *text, bool wait) {
+              QRect rect(100,i,200,100);
               QPainter painter((QPaintDevice*)(instance+8));
               printf("after ctor\n");
               painter.drawText(rect, 132,text);
               painter.end();
               printf("Sending update\n");
-              sendUpdate(0, rect, 0,10);
+              int w = wait ? 3 : 0 ;
+              sendUpdate(0, rect, 3,w);
         }
 
 
     private:
         uint32_t* instance;
+        QGuiApplication *app;
 
         //black magic
         uint32_t* (*getInstance)(void) = (uint32_t*(*)(void)) 0x224BC;
@@ -44,20 +54,11 @@ static void _libhook_init() __attribute__((constructor));
 static void _libhook_init() { printf("LIBHOOK INIT\n"); }
 
 int main(int argc, char **argv, char **envp) {
-  qputenv("QMLSCENE_DEVICE", "epaper");
-  qputenv("QT_QPA_PLATFORM", "epaper:enable_fonts");
-  //needed for qpainter
-  QGuiApplication app(argc, argv);
-  printf("OUR MAIN\n");
-  //auto instance = getInstance();
-  printf("got instance\n");
-  printf("getting painter\n");
-
   FBStuff stuff;
-  stuff.DrawText("Testing");
-
-  //QImage or something
-
+  for(int i = 0; i < 1000; i+=30){
+      stuff.DrawText(i, "Testing", false);
+  }
+  stuff.DrawText(1800, "Done", true);
   //first param is ignored,rect, waveform, ?
   printf("END of our main\n");
 }
