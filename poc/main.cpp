@@ -1,58 +1,55 @@
 ﻿#include <QImage>
-#include <QRect>
-#include <QPainter>
 #include <QGuiApplication>
-#include <cstdio>
 #include <QPaintEngine>
+#include <QPainter>
+#include <QRect>
+#include <cstdio>
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
+
+#include <dlfcn.h>
+#include <stdint.h>
 
 #include "msgq.cpp"
 
 int msg_q_id = 0x2257c;
 ipc::Queue MSGQ(msg_q_id);
 
-#include <dlfcn.h>
-#include <stdint.h>
-
 using namespace std;
 
-//todo: make it singleton
+// todo: make it singleton
 class FBStuff {
-    public:
-        FBStuff(){
-            qputenv("QMLSCENE_DEVICE", "epaper");
-            qputenv("QT_QPA_PLATFORM", "epaper:enable_fonts");
+public:
+  FBStuff() {
+    qputenv("QMLSCENE_DEVICE", "epaper");
+    qputenv("QT_QPA_PLATFORM", "epaper:enable_fonts");
 
-            //needed for qpainter
-            char *argv[0];
-            int argc = 0;
-            app = new QGuiApplication(argc,argv);
-            instance = getInstance();
-        }
+    // needed for qpainter
+    char *argv[0];
+    int argc = 0;
+    app = new QGuiApplication(argc, argv);
+    instance = getInstance();
+    printf("INSTANCE ADDRESS: 0x%lx\n", instance);
+  }
 
-        void DrawText(int i, char *text, bool wait) {
-              QRect rect(100,i,200,100);
-              QPainter painter((QPaintDevice*)(instance+8));
-              printf("after ctor\n");
-              painter.drawText(rect, 132,text);
-              painter.end();
-              printf("Sending update\n");
-              int w = wait ? 3 : 0 ;
-              sendUpdate(0, rect, 3,w);
-        }
+  void DrawText(int i, char *text, bool wait) {
+    QRect rect(100, i, 200, 100);
+    QPainter painter((QPaintDevice *)(instance + 8));
+    painter.drawText(rect, 132, text);
+    painter.end();
+    int w = wait ? 3 : 0;
+    sendUpdate(0, rect, 3, w);
+  }
 
+private:
+  uint32_t *instance;
+  QGuiApplication *app;
 
-    private:
-        uint32_t* instance;
-        QGuiApplication *app;
-
-        //black magic
-        uint32_t* (*getInstance)(void) = (uint32_t*(*)(void)) 0x224BC;
-        void (*sendUpdate)(void*, ...) = (void (*)(void*,...)) 0x2257C;
+  // black magic
+  uint32_t *(*getInstance)(void) = (uint32_t * (*)(void))0x224BC;
+  void (*sendUpdate)(void *, ...) = (void (*)(void *, ...))0x2257C;
 };
-
 
 extern "C" {
 static void _libhook_init() __attribute__((constructor));
@@ -60,11 +57,12 @@ static void _libhook_init() { printf("LIBHOOK INIT\n"); }
 
 int main(int argc, char **argv, char **envp) {
   FBStuff stuff;
-  for(int i = 0; i < 1000; i+=30){
-      stuff.DrawText(i, "Testing", false);
+  for (int i = 0; i < 1000; i += 50) {
+    stuff.DrawText(i, "Testing", false);
   }
   stuff.DrawText(1800, "Done", true);
 
+  printf("WAITING FOR SEND UPDATE ON MSG Q");
   while (true) {
     ipc::msgbuf buf = MSGQ.recv();
   }

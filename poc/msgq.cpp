@@ -1,5 +1,3 @@
-#define len(x) (int)(x).size()
-
 #include <iostream>
 #include <string.h>
 #include <string>
