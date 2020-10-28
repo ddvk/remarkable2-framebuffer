@@ -60,11 +60,13 @@ public:
 
   msg_rect recv() {
     msg_rect buf;
-    auto len = msgrcv(msqid, &buf, sizeof(buf), 0, IPC_NOWAIT);
+    auto len = msgrcv(msqid, &buf, sizeof(buf), 0, 0);
     if (len >= 0) {
       std::cout << "MSG Q RECV'D" << ' ' << buf.x << ' ' << buf.y << ' '
                 << buf.w << ' ' << buf.h << std::endl;
       return buf;
+    } else {
+      std::cout << "ERR " << len << " " << errno << endl;
     }
     return msg_rect(-1, -1, -1, -1);
   }
