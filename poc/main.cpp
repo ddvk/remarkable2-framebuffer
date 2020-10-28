@@ -61,11 +61,11 @@ int main(int argc, char **argv, char **envp) {
   }
   fb.DrawText(1800, "Done", true);
 
-  char* shared_mem = ipc::get_shared_buffer();
+  char *shared_mem = ipc::get_shared_buffer();
 
   printf("WAITING FOR SEND UPDATE ON MSG Q");
   while (true) {
-    ipc::msgbuf buf = MSGQ.recv();
+    ipc::msg_rect buf = MSGQ.recv();
     // TODO: after receiving buf, copy data from shared_mem into the instance
     // and then call sendUpdate() with the correct parameters
     for (int i = 0; i < 10; i++) {

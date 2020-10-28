@@ -16,19 +16,17 @@ using namespace std;
 namespace ipc {
 enum MSG_TYPE { INIT_t = 1, UPDATE_t };
 
-struct msgbuf {
-  int mtype;
-
+struct msg_rect {
   int x, y, w, h;
 
-  msgbuf(int mtype = UPDATE_t, int x = -1, int y = -1, int w = -1, int h = -1)
-      : mtype(mtype), x(x), y(y), w(w), h(h) {
+  msg_rect(int x = -1, int y = -1, int w = -1, int h = -1)
+      : x(x), y(y), w(w), h(h) {
     (void)0;
   }
 };
 
-int BUF_SIZE=0x165800; // hardcoded size of display mem for rM2
-static char* get_shared_buffer(string name="/swtfb.01") {
+int BUF_SIZE = 0x165800; // hardcoded size of display mem for rM2
+static char *get_shared_buffer(string name = "/swtfb.01") {
   if (name[0] != '/') {
     name = "/" + name;
   }
@@ -43,8 +41,7 @@ static char* get_shared_buffer(string name="/swtfb.01") {
   }
   printf("SHM FD: %i, errno: %i\n", fd, errno);
 
-
-  char* mem = (char*) mmap(NULL, BUF_SIZE, PROT_WRITE, MAP_SHARED, fd, 0);
+  char *mem = (char *)mmap(NULL, BUF_SIZE, PROT_WRITE, MAP_SHARED, fd, 0);
   printf("OPENED SHARED MEM: /dev/shm%s\n", name.c_str());
   return mem;
 }
@@ -57,11 +54,11 @@ public:
   void init() {
     mq_attr mqa;
     mqa.mq_maxmsg = 1;
-    mqa.mq_msgsize = sizeof(msgbuf);
-    msqid = mq_open(name.c_str(),  O_CREAT | O_RDWR, S_IRWXU, &mqa);
+    mqa.mq_msgsize = sizeof(msg_rect);
+    msqid = mq_open(name.c_str(), O_CREAT | O_RDWR, S_IRWXU, &mqa);
   }
 
-  Queue(string n="/swtfb.01") {
+  Queue(string n = "/swtfb.01") {
     if (n[0] != '/') {
       n = "/" + n;
     }
@@ -69,21 +66,21 @@ public:
     init();
   }
 
-  void send(msgbuf msg) {
+  void send(msg_rect msg) {
     mq_send(msqid, (char *)&msg, sizeof(msg), 0);
-    std::cout << "MSG Q SEND" << ' ' << msg.mtype << ' ' << msg.x << ' '
-              << msg.y << ' ' << msg.w << ' ' << msg.h << std::endl;
+    std::cout << "MSG Q SEND" << ' ' << msg.x << ' ' << msg.y << ' ' << msg.w
+              << ' ' << msg.h << std::endl;
   }
 
-  msgbuf recv() {
-    msgbuf buf;
-    auto len = mq_receive(msqid, (char*) &buf, sizeof(buf), 0);
+  msg_rect recv() {
+    msg_rect buf;
+    auto len = mq_receive(msqid, (char *)&buf, sizeof(buf), 0);
     if (len >= 0) {
-      std::cout << "MSG Q RECV'D" << ' ' << buf.mtype << ' ' << buf.x << ' '
-                << buf.y << ' ' << buf.w << ' ' << buf.h << std::endl;
+      std::cout << "MSG Q RECV'D" << ' ' << buf.x << ' ' << buf.y << ' '
+                << buf.w << ' ' << buf.h << std::endl;
       return buf;
     }
-    return msgbuf(-1, -1, -1, -1);
+    return msg_rect(-1, -1, -1, -1);
   }
 
   void destroy() { mq_close(msqid); };
