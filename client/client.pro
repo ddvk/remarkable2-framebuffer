@@ -18,4 +18,4 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 # Input
 SOURCES += client.cpp
-QMAKE_LFLAGS += -lrt
+LIBS += -lrt
