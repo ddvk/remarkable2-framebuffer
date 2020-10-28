@@ -25,7 +25,9 @@ struct msg_rect {
   }
 };
 
-int BUF_SIZE = 0x165800; // hardcoded size of display mem for rM2
+const int maxWidth = 1404;
+const int maxHeight = 1872;
+int BUF_SIZE = maxWidth * maxHeight; // hardcoded size of display mem for rM2
 static char *get_shared_buffer(string name = "/swtfb.01") {
   if (name[0] != '/') {
     name = "/" + name;

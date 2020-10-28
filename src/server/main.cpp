@@ -47,7 +47,7 @@ public:
     int argc = 0;
     app = new QGuiApplication(argc, argv);
     instance = getInstance();
-    img = (QImage*)(instance +8);
+    img = (QImage *)(instance + 8);
     printf("INSTANCE ADDRESS: 0x%lx\n", instance);
   }
 
@@ -61,13 +61,20 @@ public:
   }
 
   void DrawRaw(char *buffer, int x, int y, int w, int h) {
-      auto bits = img->bits();
-      //TODO: fix the buffer calculations
-      memcpy(bits+(x+y*maxWidth)*2, buffer, w*h*2);
-      QRect rect(x, y, w, h);
-      ClockWatch cz;
-      sendUpdate(0, rect, 3, 2);
-      cout << "Update took " << cz.elapsed() << "s" << endl;
+    auto dest = img->bits();
+
+    int stride = maxWidth;
+    int x0 = x, y0 = y, x1 = x0 + w, y1 = y0 + h;
+
+    for (int i = y0; i < y1; i++) {
+      memcpy(&dest[i * stride + x0], &buffer[i * stride + x0],
+             (x1 - x0) * sizeof(uint16_t));
+    }
+
+    QRect rect(x, y, w, h);
+    ClockWatch cz;
+    sendUpdate(0, rect, 3, 2);
+    cout << "Update took " << cz.elapsed() << "s" << endl;
   }
 
 private:
@@ -96,14 +103,15 @@ int main(int argc, char **argv, char **envp) {
   printf("WAITING FOR SEND UPDATE ON MSG Q");
   while (true) {
     ipc::msg_rect buf = MSGQ.recv();
-    fb.DrawRaw(shared_mem, buf.x, buf.y, buf.w, buf.h); 
-    // TODO: after receiving buf, copy data from shared_mem into the instance
-    // and then call sendUpdate() with the correct parameters
+    fb.DrawRaw(shared_mem, buf.x, buf.y, buf.w, buf.h);
+
+#ifdef DEBUG_MSGQ
     for (int i = 0; i < 10; i++) {
       printf("%i, ", shared_mem[i]);
     }
     printf("\n");
     memset(shared_mem, 0, 100);
+#endif
   }
   printf("END of our main\n");
 }
