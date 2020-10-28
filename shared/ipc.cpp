@@ -4,12 +4,12 @@
 #include <string>
 #include <sys/ipc.h>
 #include <sys/mman.h>
+#include <sys/msg.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 #include <linux/limits.h>
-#include <mqueue.h>
 
 using namespace std;
 
@@ -31,51 +31,36 @@ static char *get_shared_buffer(string name = "/swtfb.01") {
     name = "/" + name;
   }
 
-  int fd = shm_open(name.c_str(), O_RDWR, S_IRWXU);
-  if (fd == -1 && errno == ENOENT) {
-    printf("CREATING SHMEM\n");
+  int fd = shm_open(name.c_str(), O_RDWR | O_CREAT, S_IRWXU);
+  if (fd == -1 && errno == 13) {
     fd = shm_open(name.c_str(), O_RDWR, S_IRWXU);
-    if (ftruncate(fd, BUF_SIZE) != 0) {
-      printf("COULDNT RESIZE SHARED MEM\n");
-    }
   }
   printf("SHM FD: %i, errno: %i\n", fd, errno);
 
-  char *mem = (char *)mmap(NULL, BUF_SIZE, PROT_WRITE, MAP_SHARED, fd, 0);
+  ftruncate(fd, BUF_SIZE);
+  char* mem = (char*) mmap(NULL, BUF_SIZE, PROT_WRITE, MAP_SHARED, fd, 0);
   printf("OPENED SHARED MEM: /dev/shm%s\n", name.c_str());
   return mem;
 }
 
 class Queue {
 public:
-  string name;
-  mqd_t msqid = -1;
+  unsigned long id;
+  int msqid = -1;
 
-  void init() {
-    mq_attr mqa;
-    mqa.mq_maxmsg = 1;
-    mqa.mq_msgsize = sizeof(msg_rect);
-    msqid = mq_open(name.c_str(), O_CREAT | O_RDWR, S_IRWXU, &mqa);
-  }
+  void init() { msqid = msgget(id, IPC_CREAT | 0600); }
 
-  Queue(string n = "/swtfb.01") {
-    if (n[0] != '/') {
-      n = "/" + n;
-    }
-    name = n;
-    init();
-  }
+  Queue(int id) : id(id) { init(); }
 
   void send(msg_rect msg) {
-    mq_send(msqid, (char *)&msg, sizeof(msg), 0);
+    auto r = msgsnd(msqid, (void *)&msg, sizeof(msg), 0);
     std::cout << "MSG Q SEND" << ' ' << msg.x << ' ' << msg.y << ' ' << msg.w
-              << ' ' << msg.h << std::endl;
+    << ' ' << msg.h << std::endl;
   }
 
   msg_rect recv() {
     msg_rect buf;
-    auto len = mq_receive(msqid, (char *)&buf, sizeof(buf), 0);
-    std::cout << "RECEIVED " << len << ", " << errno << endl;
+    auto len = msgrcv(msqid, &buf, sizeof(buf), 0, IPC_NOWAIT);
     if (len >= 0) {
       std::cout << "MSG Q RECV'D" << ' ' << buf.x << ' ' << buf.y << ' '
                 << buf.w << ' ' << buf.h << std::endl;
@@ -84,6 +69,6 @@ public:
     return msg_rect(-1, -1, -1, -1);
   }
 
-  void destroy() { mq_close(msqid); };
+  void destroy() { msgctl(msqid, IPC_RMID, 0); };
 };
 }; // namespace ipc

@@ -2,7 +2,8 @@
 
 #include <stdlib.h>
 
-ipc::Queue MSGQ;
+int msg_q_id = 0x2257c;
+ipc::Queue MSGQ(msg_q_id);
 
 int WIDTH = 1408;
 int HEIGHT = 1040;
