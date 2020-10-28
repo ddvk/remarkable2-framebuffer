@@ -24,12 +24,15 @@ this will generate two binaries: `src/server/librm2fb.so` and
 `src/client/client`. Copy them to your remarkable and run:
 
 ```
-LD_PRELOAD=./path/to/librm2fb.so <binary> # starts the FB server
-./client # sends an example "update rect" command
+# start the FB server
+LD_PRELOAD=/path/to/librm2fb.so /usr/bin/remarkable-shutdown 
+
+# send an example "update rect" command
+./client 
 ```
 
 NOTE: For this to work, your binary should have the md5sum of
-dbd4e8dfeb8810c88fc9d5a902e65961
+`dbd4e8dfeb8810c88fc9d5a902e65961`
 
 ## contributing
 
@@ -40,7 +43,7 @@ Things that can use help:
 
 * writing documentation
 * setting up this repository build system and CI
-* achieving fash refresh latency
+* achieving fast refresh latency
 * understanding the waveforms used by SWTCON
 * writing a robust client library for interacting with server process
 * making a general way of finding the fb memory in xochitl and exposing it as shared mem
