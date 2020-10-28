@@ -75,6 +75,7 @@ public:
   msg_rect recv() {
     msg_rect buf;
     auto len = mq_receive(msqid, (char *)&buf, sizeof(buf), 0);
+    std::cout << "RECEIVED " << len << ", " << errno << endl;
     if (len >= 0) {
       std::cout << "MSG Q RECV'D" << ' ' << buf.x << ' ' << buf.y << ' '
                 << buf.w << ' ' << buf.h << std::endl;
