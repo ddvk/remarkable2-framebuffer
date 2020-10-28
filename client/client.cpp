@@ -1,4 +1,4 @@
-#include "ipc.cpp"
+#include "../shared/ipc.cpp"
 
 int msg_q_id = 0x2257c;
 ipc::Queue MSGQ(msg_q_id);
