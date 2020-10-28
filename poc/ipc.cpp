@@ -29,6 +29,10 @@ struct msgbuf {
 
 int BUF_SIZE=0x165800; // hardcoded size of display mem for rM2
 static char* get_shared_buffer(string name="/swtfb.01") {
+  if (name[0] != '/') {
+    name = "/" + name;
+  }
+
   int fd = shm_open(name.c_str(), O_RDWR | O_CREAT, S_IRWXU);
   if (fd == -1 && errno == 13) {
     fd = shm_open(name.c_str(), O_RDWR, S_IRWXU);
@@ -37,7 +41,7 @@ static char* get_shared_buffer(string name="/swtfb.01") {
 
   ftruncate(fd, BUF_SIZE);
   char* mem = (char*) mmap(NULL, BUF_SIZE, PROT_WRITE, MAP_SHARED, fd, 0);
-  printf("OPENED SHARED MEM: %s\n", name.c_str());
+  printf("OPENED SHARED MEM: /dev/shm%s\n", name.c_str());
   return mem;
 }
 
