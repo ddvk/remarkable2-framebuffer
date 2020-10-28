@@ -68,6 +68,11 @@ int main(int argc, char **argv, char **envp) {
     ipc::msgbuf buf = MSGQ.recv();
     // TODO: after receiving buf, copy data from shared_mem into the instance
     // and then call sendUpdate() with the correct parameters
+    for (int i = 0; i < 10; i++) {
+      printf("%i, ", shared_mem[i]);
+    }
+    printf("\n");
+    memset(shared_mem, 0, 100);
   }
   printf("END of our main\n");
 }
