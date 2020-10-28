@@ -9,7 +9,11 @@
 #define SCWIDTH 1404
 #define SCHEIGHT 1872
 static uint8_t arr[0x16580];
+static uint8_t InitMask[0x16580];
 static uint8_t buffer[SCWIDTH*SCHEIGHT];
+
+void create_mask() {
+}
 
 void check_error(int err, char *msg){
     if (err < 0) {
@@ -23,7 +27,6 @@ void load_waveform(char *fileName){
         puts("cant open waveform");
         exit(1);
     }
-
     // more loading logic
 }
 
@@ -43,6 +46,9 @@ int main(int argc, char *argv[])
     result = ioctl(fd, FBIOGET_FSCREENINFO, &finfo);
     check_error(result, "cant get fcreen");
 
+
+    // todo: set the fb
+    vinfo.yscreen = 1;
     result = ioctl(fd, FBIOPUT_VSCREENINFO, &vinfo);
     check_error(result, "cant set vcreen");
 
@@ -54,12 +60,18 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    //todo check the format
-    QImage img(SCWIDTH, SCHEIGHT, QImage::Format_RGB32);
+    QImage img(SCWIDTH, SCHEIGHT, QImage::Format_RGB16);
     img.fill(Qt::white);
+    
+    //mangle and rotate the bits to a grayscale
 
     auto bits = img.bits();
     memcpy(fbp, bits, 1000);
+
+
+    //apply the waveform to the mangled
+    //copy the mangled to fb
+    //ioctl(4606)
 
 
     printf("exiting...\n");

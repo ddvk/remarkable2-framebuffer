@@ -17,6 +17,8 @@ int msg_q_id = 0x2257c;
 ipc::Queue MSGQ(msg_q_id);
 
 using namespace std;
+const int maxWidth = 1404;
+const int maxHeight = 1872;
 
 // todo: make it singleton
 class SwtFB {
@@ -30,21 +32,32 @@ public:
     int argc = 0;
     app = new QGuiApplication(argc, argv);
     instance = getInstance();
+    img = (QImage*)(instance +8);
     printf("INSTANCE ADDRESS: 0x%lx\n", instance);
   }
 
   void DrawText(int i, char *text, bool wait) {
     QRect rect(100, i, 200, 100);
-    QPainter painter((QPaintDevice *)(instance + 8));
+    QPainter painter(img);
     painter.drawText(rect, 132, text);
     painter.end();
-    int w = wait ? 3 : 0;
+    int w = wait ? 2 : 0;
     sendUpdate(0, rect, 3, w);
+  }
+
+  void DrawRaw(char *buffer, int x, int y, int w, int h) {
+      auto bits = img->bits();
+      //TODO: fix the buffer calculations
+      memcpy(bits+(x+y*maxWidth)*2, buffer, w*h*2);
+      QRect rect(x, y, w, h);
+      sendUpdate(0, rect, 3, 2);
+      printf("Updated \n");
   }
 
 private:
   uint32_t *instance;
   QGuiApplication *app;
+  QImage *img;
 
   // black magic
   uint32_t *(*getInstance)(void) = (uint32_t * (*)(void))0x224BC;
@@ -67,6 +80,7 @@ int main(int argc, char **argv, char **envp) {
   printf("WAITING FOR SEND UPDATE ON MSG Q");
   while (true) {
     ipc::msg_rect buf = MSGQ.recv();
+    fb.DrawRaw(shared_mem, buf.x, buf.y, buf.w, buf.h); 
     // TODO: after receiving buf, copy data from shared_mem into the instance
     // and then call sendUpdate() with the correct parameters
     for (int i = 0; i < 10; i++) {

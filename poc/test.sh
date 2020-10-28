@@ -1,1 +1,1 @@
-make && scp libfb.so.1.0.0 rm:main.so && ssh -tt rm "LD_PRELOAD=/home/root/main.so ./remarkable-shutdown"
+make && scp libfb.so.1.0.0 rm: && ssh -tt rm "LD_PRELOAD=/home/root/libfb.so.1.0.0 ./remarkable-shutdown"
