@@ -4,12 +4,12 @@
 #include <string>
 #include <sys/ipc.h>
 #include <sys/mman.h>
-#include <sys/msg.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 #include <linux/limits.h>
+#include <mqueue.h>
 
 using namespace std;
 
@@ -33,13 +33,17 @@ static char* get_shared_buffer(string name="/swtfb.01") {
     name = "/" + name;
   }
 
-  int fd = shm_open(name.c_str(), O_RDWR | O_CREAT, S_IRWXU);
-  if (fd == -1 && errno == 13) {
+  int fd = shm_open(name.c_str(), O_RDWR, S_IRWXU);
+  if (fd == -1 && errno == ENOENT) {
+    printf("CREATING SHMEM\n");
     fd = shm_open(name.c_str(), O_RDWR, S_IRWXU);
+    if (ftruncate(fd, BUF_SIZE) != 0) {
+      printf("COULDNT RESIZE SHARED MEM\n");
+    }
   }
   printf("SHM FD: %i, errno: %i\n", fd, errno);
 
-  ftruncate(fd, BUF_SIZE);
+
   char* mem = (char*) mmap(NULL, BUF_SIZE, PROT_WRITE, MAP_SHARED, fd, 0);
   printf("OPENED SHARED MEM: /dev/shm%s\n", name.c_str());
   return mem;
@@ -47,22 +51,33 @@ static char* get_shared_buffer(string name="/swtfb.01") {
 
 class Queue {
 public:
-  unsigned long id;
-  int msqid = -1;
+  string name;
+  mqd_t msqid = -1;
 
-  void init() { msqid = msgget(id, IPC_CREAT | 0600); }
+  void init() {
+    mq_attr mqa;
+    mqa.mq_maxmsg = 1;
+    mqa.mq_msgsize = sizeof(msgbuf);
+    msqid = mq_open(name.c_str(),  O_CREAT | O_RDWR, S_IRWXU, &mqa);
+  }
 
-  Queue(int id) : id(id) { init(); }
+  Queue(string n="/swtfb.01") {
+    if (n[0] != '/') {
+      n = "/" + n;
+    }
+    name = n;
+    init();
+  }
 
   void send(msgbuf msg) {
-    auto r = msgsnd(msqid, (void *)&msg, sizeof(msg), 0);
+    mq_send(msqid, (char *)&msg, sizeof(msg), 0);
     std::cout << "MSG Q SEND" << ' ' << msg.mtype << ' ' << msg.x << ' '
               << msg.y << ' ' << msg.w << ' ' << msg.h << std::endl;
   }
 
   msgbuf recv() {
     msgbuf buf;
-    auto len = msgrcv(msqid, &buf, sizeof(buf), 0, IPC_NOWAIT);
+    auto len = mq_receive(msqid, (char*) &buf, sizeof(buf), 0);
     if (len >= 0) {
       std::cout << "MSG Q RECV'D" << ' ' << buf.mtype << ' ' << buf.x << ' '
                 << buf.y << ' ' << buf.w << ' ' << buf.h << std::endl;
@@ -71,6 +86,6 @@ public:
     return msgbuf(-1, -1, -1, -1);
   }
 
-  void destroy() { msgctl(msqid, IPC_RMID, 0); };
+  void destroy() { mq_close(msqid); };
 };
 }; // namespace ipc
