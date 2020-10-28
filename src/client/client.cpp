@@ -5,12 +5,12 @@
 int msg_q_id = 0x2257c;
 ipc::Queue MSGQ(msg_q_id);
 
-int WIDTH = 1408;
-int HEIGHT = 1040;
+int WIDTH = 1404;
+int HEIGHT = 1872;
 
 class SwtFB {
 public:
-  char *fbmem;
+  uint16_t *fbmem;
   ipc::msg_rect dirty_area;
 
   SwtFB() {
@@ -34,8 +34,18 @@ public:
     x1 = max(x1, rect.x + rect.w);
     y1 = max(y1, rect.y + rect.h);
 
+    if (x1 > WIDTH) {
+      x1 = WIDTH-1;
+    }
+    if (y1 > HEIGHT) {
+      y1 = HEIGHT-1;
+    }
+
     dirty_area.x = min(rect.x, dirty_area.x);
     dirty_area.y = min(rect.y, dirty_area.y);
+
+    if (dirty_area.x < 0) { dirty_area.x = 0; }
+    if (dirty_area.y < 0) { dirty_area.y = 0; }
 
     dirty_area.w = x1 - dirty_area.x;
     dirty_area.h = y1 - dirty_area.y;
@@ -62,13 +72,18 @@ int main() {
 
   SwtFB fb;
 
-  for (int i = 0; i < 10; i++) {
-    fb.fbmem[i] = rand();
-    printf("%i, ", fb.fbmem[i]);
+  for (int i = 0; i < WIDTH*HEIGHT; i++) {
+    fb.fbmem[i] = i;
   }
-  printf("\n");
 
-  fb.mark_dirty({250, 500, 200, 200});
-  fb.mark_dirty({250, 100, 200, 200});
+  int x = (rand() % WIDTH);
+  int y = (rand() % HEIGHT);
+  if (x > WIDTH) { x -= WIDTH; };
+  if (y > HEIGHT) { y -= HEIGHT; };
+  int w = 200 + (rand() % 10+1) * 50;
+  int h = 200 + (rand() % 10+1) * 50;
+
+  cout << x << " " << y << " " << w << " " << h << endl;
+  fb.mark_dirty({x, y, w, h});
   fb.redraw_screen();
 }

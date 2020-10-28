@@ -27,8 +27,8 @@ struct msg_rect {
 
 const int maxWidth = 1404;
 const int maxHeight = 1872;
-int BUF_SIZE = maxWidth * maxHeight; // hardcoded size of display mem for rM2
-static char *get_shared_buffer(string name = "/swtfb.01") {
+int BUF_SIZE = maxWidth * maxHeight * sizeof(uint16_t); // hardcoded size of display mem for rM2
+static uint16_t *get_shared_buffer(string name = "/swtfb.01") {
   if (name[0] != '/') {
     name = "/" + name;
   }
@@ -40,7 +40,7 @@ static char *get_shared_buffer(string name = "/swtfb.01") {
   printf("SHM FD: %i, errno: %i\n", fd, errno);
 
   ftruncate(fd, BUF_SIZE);
-  char* mem = (char*) mmap(NULL, BUF_SIZE, PROT_WRITE, MAP_SHARED, fd, 0);
+  uint16_t* mem = (uint16_t*) mmap(NULL, BUF_SIZE, PROT_WRITE, MAP_SHARED, fd, 0);
   printf("OPENED SHARED MEM: /dev/shm%s\n", name.c_str());
   return mem;
 }

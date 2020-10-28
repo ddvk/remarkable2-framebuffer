@@ -49,6 +49,8 @@ public:
     instance = getInstance();
     img = (QImage *)(instance + 8);
     printf("INSTANCE ADDRESS: 0x%lx\n", instance);
+
+    cout << img->width() << " " << img->height() << " " << img->depth() << endl;
   }
 
   void DrawText(int i, char *text, bool wait) {
@@ -60,11 +62,13 @@ public:
     sendUpdate(0, rect, 3, w);
   }
 
-  void DrawRaw(char *buffer, int x, int y, int w, int h) {
-    auto dest = img->bits();
+  void DrawRaw(uint16_t *buffer, int x, int y, int w, int h) {
+    uint16_t* dest = (uint16_t*) img->bits();
 
     int stride = maxWidth;
     int x0 = x, y0 = y, x1 = x0 + w, y1 = y0 + h;
+
+    cout << "CORNERS" << " " << x0 << " " << y0 << " " << x1 << " " << y1 << endl;
 
     for (int i = y0; i < y1; i++) {
       memcpy(&dest[i * stride + x0], &buffer[i * stride + x0],
@@ -98,7 +102,7 @@ int main(int argc, char **argv, char **envp) {
   }
   fb.DrawText(1800, "Done", true);
 
-  char *shared_mem = ipc::get_shared_buffer();
+  uint16_t *shared_mem = ipc::get_shared_buffer();
 
   printf("WAITING FOR SEND UPDATE ON MSG Q");
   while (true) {
