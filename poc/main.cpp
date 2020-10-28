@@ -3,6 +3,7 @@
 #include <QPaintEngine>
 #include <QPainter>
 #include <QRect>
+#include <chrono>
 #include <cstdio>
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -19,6 +20,20 @@ ipc::Queue MSGQ(msg_q_id);
 using namespace std;
 const int maxWidth = 1404;
 const int maxHeight = 1872;
+
+class ClockWatch {
+public:
+  chrono::high_resolution_clock::time_point t1;
+
+  ClockWatch() { t1 = chrono::high_resolution_clock::now(); }
+
+  auto elapsed() {
+    auto t2 = chrono::high_resolution_clock::now();
+    chrono::duration<double> time_span =
+        chrono::duration_cast<chrono::duration<double>>(t2 - t1);
+    return time_span.count();
+  }
+};
 
 // todo: make it singleton
 class SwtFB {
@@ -50,8 +65,9 @@ public:
       //TODO: fix the buffer calculations
       memcpy(bits+(x+y*maxWidth)*2, buffer, w*h*2);
       QRect rect(x, y, w, h);
+      ClockWatch cz;
       sendUpdate(0, rect, 3, 2);
-      printf("Updated \n");
+      cout << "Update took " << cz.elapsed() << "s" << endl;
   }
 
 private:
