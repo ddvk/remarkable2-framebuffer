@@ -50,3 +50,34 @@ Things that can use help:
 * writing our own implementation of SWTCON
 * designing a client API that makes sense
 * porting existing apps to use the rm2fb sendUpdate API
+
+## FAQ
+
+* will this brick my rM2?
+
+probably not, but no guarantees
+
+* how do I port my existing app to rM2?
+
+we are figuring out how to give app developers a simple to use API that is
+almost a drop in replacement for the rM1 framebuffer rendering code
+
+* how can I get in touch?
+
+use github issues or ping on the discord in one of the homebrew developer
+channels. if you mention this repo, someone will probably respond
+
+* what's up with server/client API?
+
+The current way we are interacting with the framebuffer requires modifying a
+binary - we figure it is better to isolate that into one process and the rest
+of the programs can use simple IPC to communicate with that process.
+
+In addition, using a server/client API will potentially make new features
+possible that were not doable on the rM1, since it will enforce that apps
+have some sort of coordination between them.
+
+* should you distribute apps that use the LD_PRELOAD method of drawing to the framebuffer?
+
+no, probably not. let's figure out a design that doesn't require every app to
+ship a 3rd party binary.
