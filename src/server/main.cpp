@@ -53,13 +53,27 @@ public:
     cout << img->width() << " " << img->height() << " " << img->depth() << endl;
   }
 
+  void DrawLine() {
+
+      for(int i=0; i < maxHeight; i++) {
+          img->setPixel(100, i, 0xF0);
+          QRect rect(99, i+1, 2, 2);
+          sendUpdate(0, rect, 1, 4); 
+          printf(".");
+      }
+  }
+
   void DrawText(int i, char *text, bool wait) {
     QRect rect(100, i, 200, 100);
     QPainter painter(img);
     painter.drawText(rect, 132, text);
     painter.end();
     int w = wait ? 2 : 0;
-    sendUpdate(0, rect, 3, w);
+    //sendUpdate(0, rect, 3, 3); //slow
+    //sendUpdate(0, rect, 3, 2); //slow but nice
+    //sendUpdate(0, rect, 2, 1); //flashing background
+    //sendUpdate(0, rect, 2, 0); //flashing background
+    sendUpdate(0, rect, 2, 4); 
   }
 
   void DrawRaw(uint16_t *buffer, int x, int y, int w, int h) {
@@ -97,6 +111,7 @@ static void _libhook_init() { printf("LIBHOOK INIT\n"); }
 
 int main(int argc, char **argv, char **envp) {
   SwtFB fb;
+  fb.DrawLine();
   for (int i = 0; i < 1000; i += 50) {
     fb.DrawText(i, "Testing", false);
   }
