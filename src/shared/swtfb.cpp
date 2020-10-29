@@ -31,7 +31,7 @@ const int maxHeight = 1872;
 public:
   SwtFB() {
     instance = NULL;
-    // initQT();
+    initQT();
   }
 
   void initQT() {
