@@ -55,7 +55,8 @@ public:
   Queue(int id) : id(id) { init(); }
 
   void send(msg_rect msg) {
-    auto r = msgsnd(msqid, (void *)&msg, sizeof(msg), 0);
+    // TODO: read return value
+    msgsnd(msqid, (void *)&msg, sizeof(msg), 0);
     std::cout << "MSG Q SEND" << ' ' << msg.x << ' ' << msg.y << ' ' << msg.w
     << ' ' << msg.h << std::endl;
   }
