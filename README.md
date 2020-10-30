@@ -26,10 +26,15 @@ qmake
 make
 ```
 
-this will generate `src/loader/librm2fb.so.1.0.0`. Copy it to your remarkable and run:
+this will generate two binaries: `src/server/librm2fb.so` and
+`src/client/client`. Copy them to your remarkable and run:
 
 ```
+# start the FB server
 LD_PRELOAD=/path/to/librm2fb.so /usr/bin/remarkable-shutdown 
+
+# send an example "update rect" command
+./client 
 ```
 
 NOTE: For this to work, your binary should have the md5sum of
@@ -46,6 +51,7 @@ Things that can use help:
 * setting up this repository build system and CI
 * achieving fast refresh latency
 * understanding the waveforms used by SWTCON
+* writing a robust client library for interacting with server process
 * making a general way of finding the fb memory in xochitl and exposing it as shared mem
 * writing our own implementation of SWTCON
 * designing a client API that makes sense
@@ -66,6 +72,16 @@ almost a drop in replacement for the rM1 framebuffer rendering code
 
 use github issues or ping on the discord in one of the homebrew developer
 channels. if you mention this repo, someone will probably respond
+
+* what's up with server/client API?
+
+The current way we are interacting with the framebuffer requires modifying a
+binary - we figure it is better to isolate that into one process and the rest
+of the programs can use simple IPC to communicate with that process.
+
+In addition, using a server/client API will potentially make new features
+possible that were not doable on the rM1, since it will enforce that apps
+have some sort of coordination between them.
 
 * should you distribute apps that use the LD_PRELOAD method of drawing to the framebuffer?
 
