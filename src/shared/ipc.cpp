@@ -16,14 +16,32 @@ using namespace std;
 namespace ipc {
 enum MSG_TYPE { INIT_t = 1, UPDATE_t };
 
-struct msg_rect {
-  int x, y, w, h;
-
-  msg_rect(int x = -1, int y = -1, int w = -1, int h = -1)
-      : x(x), y(y), w(w), h(h) {
-    (void)0;
-  }
+// from mxcfb.h {{{
+// NOTE: i put left in front of top instead of after
+struct mxcfb_rect {
+	uint32_t left;
+	uint32_t top;
+	uint32_t width;
+	uint32_t height;
 };
+
+// TODO: decide if uint32_t is right size for temp, flags, dither_mode and quant_bit
+// which were 'int' previously
+struct mxcfb_update_data {
+	struct mxcfb_rect update_region;
+	uint32_t waveform_mode;
+	uint32_t update_mode;
+	uint32_t update_marker;
+	uint32_t temp;
+	uint32_t flags;
+	uint32_t dither_mode;
+	uint32_t quant_bit;
+	// struct mxcfb_alt_buffer_data alt_buffer_data;
+};
+// }}} end mxcfb.h
+
+typedef struct mxcfb_rect swtfb_rect;
+typedef struct mxcfb_update_data swtfb_update;
 
 const int maxWidth = 1404;
 const int maxHeight = 1872;
@@ -54,24 +72,25 @@ public:
 
   Queue(int id) : id(id) { init(); }
 
-  void send(msg_rect msg) {
+  void send(swtfb_update msg) {
     // TODO: read return value
+    auto rect = msg.update_region;
+    cout << rect.left << " " << rect.top << " " << rect.width << " " << rect.height << endl;
     msgsnd(msqid, (void *)&msg, sizeof(msg), 0);
-    std::cout << "MSG Q SEND" << ' ' << msg.x << ' ' << msg.y << ' ' << msg.w
-    << ' ' << msg.h << std::endl;
   }
 
-  msg_rect recv() {
-    msg_rect buf;
+  swtfb_update recv() {
+    swtfb_update buf;
     auto len = msgrcv(msqid, &buf, sizeof(buf), 0, 0);
     if (len >= 0) {
-      std::cout << "MSG Q RECV'D" << ' ' << buf.x << ' ' << buf.y << ' '
-                << buf.w << ' ' << buf.h << std::endl;
+      auto rect = buf.update_region;
+      cout << rect.left << " " << rect.top << " " << rect.width << " " << rect.height << endl;
       return buf;
     } else {
       std::cout << "ERR " << len << " " << errno << endl;
     }
-    return msg_rect(-1, -1, -1, -1);
+
+    return {};
   }
 
   void destroy() { msgctl(msqid, IPC_RMID, 0); };

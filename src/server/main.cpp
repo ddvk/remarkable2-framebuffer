@@ -24,8 +24,10 @@ int main(int, char **, char **) {
 
   printf("WAITING FOR SEND UPDATE ON MSG Q");
   while (true) {
-    ipc::msg_rect buf = MSGQ.recv();
-    fb.DrawRaw(shared_mem, buf.x, buf.y, buf.w, buf.h);
+    ipc::swtfb_update buf = MSGQ.recv();
+    auto rect = buf.update_region;
+    cout << rect.left << " " << rect.top << " " << rect.width << " " << rect.height << endl;
+    fb.DrawRaw(shared_mem, rect.left, rect.top, rect.width, rect.height);
 
 #ifdef DEBUG_MSGQ
     for (int i = 0; i < 10; i++) {

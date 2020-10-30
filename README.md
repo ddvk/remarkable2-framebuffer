@@ -20,15 +20,15 @@ qmake
 make
 ```
 
-this will generate two binaries: `src/server/librm2fb.so` and
+this will generate two binaries: `src/server/librm2fb_server.so` and
 `src/client/client`. Copy them to your remarkable and run:
 
 ```
 # start the FB server
-LD_PRELOAD=/path/to/librm2fb.so /usr/bin/remarkable-shutdown 
+LD_PRELOAD=/path/to/librm2fb_server.so /usr/bin/remarkable-shutdown
 
 # send an example "update rect" command
-./client 
+./client
 ```
 
 NOTE: For this to work, your binary should have the md5sum of
@@ -69,15 +69,21 @@ channels. if you mention this repo, someone will probably respond
 
 * what's up with server/client API?
 
+[see this proposal](https://github.com/ddvk/remarkable2-framebuffer/issues/4)
+
+The summary is:
+
 The current way we are interacting with the framebuffer requires modifying a
 binary - we figure it is better to isolate that into one process and the rest
-of the programs can use simple IPC to communicate with that process.
+of the programs can use simple IPC to communicate with that process. Then as
+we learn more about the FB, we can fix the server without having to fix each
+client.
 
 In addition, using a server/client API will potentially make new features
 possible that were not doable on the rM1, since it will enforce that apps
 have some sort of coordination between them.
 
-* should you distribute apps that use the LD_PRELOAD method of drawing to the framebuffer?
+* should I distribute apps that use the LD_PRELOAD method of drawing to the framebuffer?
 
 no, probably not. let's figure out a design that doesn't require every app to
 ship a 3rd party binary.
