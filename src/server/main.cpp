@@ -9,10 +9,11 @@
 #include "../shared/ipc.cpp"
 #include "../shared/swtfb.cpp"
 
+using namespace std;
+using namespace swtfb;
+
 int msg_q_id = 0x2257c;
 ipc::Queue MSGQ(msg_q_id);
-
-using namespace std;
 
 extern "C" {
 static void _libhook_init() __attribute__((constructor));

@@ -9,6 +9,7 @@
 
 using namespace std;
 
+namespace swtfb {
 class ClockWatch {
 public:
   chrono::high_resolution_clock::time_point t1;
@@ -102,3 +103,4 @@ private:
   uint32_t *(*getInstance)(void) = (uint32_t * (*)(void))0x224BC;
   void (*sendUpdate)(void *, ...) = (void (*)(void *, ...))0x2257C;
 };
+}

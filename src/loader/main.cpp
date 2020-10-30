@@ -16,7 +16,7 @@ static void _libhook_init() __attribute__((constructor));
 static void _libhook_init() { printf("LIBHOOK INIT\n"); }
 
 int main(int, char **, char **) {
-  SwtFB fb;
+  swtfb::SwtFB fb;
   fb.DrawLine();
   for (int i = 0; i < 1000; i += 50) {
     fb.DrawText(i, "Testing", false);
