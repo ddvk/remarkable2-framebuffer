@@ -10,11 +10,17 @@ this PoC can open the framebuffer and draw to it. Additionally, it exposes a
 simple API for other processes to draw to the framebuffer using shared mem and
 message queues.
 
+## set up build environment
+
+[set up remarkable toolchain](https://remarkablewiki.com/devel/qt_creator#toolchain)
+
+
 ## building
 
-get the remarkable toolchain and source it (as per usual), then run:
+Source the remarkable toolchain (example below) and run the following (replacing ${GITROOT} with the directory you have checked the repository out to)
 
 ```
+source /usr/local/oecore-x86_64/environment-setup-cortexa9hf-neon-oe-linux-gnueabi
 cd ${GITROOT}
 qmake
 make
@@ -65,3 +71,17 @@ channels. if you mention this repo, someone will probably respond
 
 no, probably not. let's figure out a design that doesn't require every app to
 ship a 3rd party binary.
+
+## Memory locations
+
+### 2.4.1.30
+
+md5sum fec600ccae7743dd4e5d8046427244c0
+0x21F54
+0x21A34
+
+### 2.3~
+
+md5sum dbd4e8dfeb8810c88fc9d5a902e65961
+0x224BC
+0x2257C
