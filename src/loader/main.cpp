@@ -1,44 +1,29 @@
-﻿#ifndef _GNU_SOURCE
+﻿#include "../shared/swtfb.cpp"
+
+#include <cstdio>
+#include <iostream>
+
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
 
-#include <cstdio>
 #include <dlfcn.h>
 #include <stdint.h>
 
-#include "../shared/ipc.cpp"
-#include "../shared/swtfb.cpp"
-
-using namespace std;
-using namespace swtfb;
-
-int msg_q_id = 0x2257c;
-ipc::Queue MSGQ(msg_q_id);
 
 extern "C" {
 static void _libhook_init() __attribute__((constructor));
 static void _libhook_init() { printf("LIBHOOK INIT\n"); }
 
 int main(int, char **, char **) {
-  SwtFB fb;
-  uint16_t *shared_mem = ipc::get_shared_buffer();
-
-  printf("WAITING FOR SEND UPDATE ON MSG Q");
-  while (true) {
-    ipc::swtfb_update buf = MSGQ.recv();
-    auto rect = buf.update_region;
-    cout << rect.left << " " << rect.top << " " << rect.width << " "
-         << rect.height << endl;
-    fb.DrawRaw(shared_mem, rect.left, rect.top, rect.width, rect.height);
-
-#ifdef DEBUG_MSGQ
-    for (int i = 0; i < 10; i++) {
-      printf("%i, ", shared_mem[i]);
-    }
-    printf("\n");
-    memset(shared_mem, 0, 100);
-#endif
+  swtfb::SwtFB fb;
+  fb.FullScreen();
+  fb.DrawLine();
+  for (int i = 0; i < 1000; i += 50) {
+    fb.DrawText(i, "Testing", false);
   }
+  fb.DrawText(1800, "Done", true);
+
   printf("END of our main\n");
 }
 

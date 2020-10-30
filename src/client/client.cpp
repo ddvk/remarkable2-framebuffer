@@ -1,17 +1,21 @@
 #include "../shared/ipc.cpp"
 
 #include <stdlib.h>
+#include <unistd.h>
+
+uint32_t WIDTH = 1404;
+uint32_t HEIGHT = 1872;
+
+namespace swtfb {
 
 int msg_q_id = 0x2257c;
 ipc::Queue MSGQ(msg_q_id);
 
-int WIDTH = 1404;
-int HEIGHT = 1872;
-
 class SwtFB {
 public:
   uint16_t *fbmem;
-  ipc::msg_rect dirty_area;
+  ipc::swtfb_update update;
+  ipc::swtfb_rect dirty_area;
 
   SwtFB() {
     fbmem = ipc::get_shared_buffer();
@@ -19,71 +23,79 @@ public:
   }
 
   void reset_dirty() {
-    dirty_area.x = WIDTH;
-    dirty_area.y = HEIGHT;
-    dirty_area.w = -WIDTH;
-    dirty_area.h = -HEIGHT;
+    dirty_area.left = WIDTH;
+    dirty_area.top = HEIGHT;
+    dirty_area.width = 0;
+    dirty_area.height = 0;
   }
 
-  void mark_dirty(ipc::msg_rect &&rect) { mark_dirty(rect); }
+  void mark_dirty(ipc::swtfb_rect &&rect) { mark_dirty(rect); }
 
-  void mark_dirty(ipc::msg_rect &rect) {
-    int x1 = dirty_area.x + dirty_area.w;
-    int y1 = dirty_area.y + dirty_area.h;
+  void mark_dirty(ipc::swtfb_rect &rect) {
+    uint32_t x1 = dirty_area.left + dirty_area.width;
+    uint32_t y1 = dirty_area.top + dirty_area.height;
 
-    x1 = max(x1, rect.x + rect.w);
-    y1 = max(y1, rect.y + rect.h);
+    x1 = std::max(x1, rect.left + rect.width);
+    y1 = std::max(y1, rect.top + rect.height);
 
     if (x1 > WIDTH) {
-      x1 = WIDTH-1;
+      x1 = WIDTH - 1;
     }
     if (y1 > HEIGHT) {
-      y1 = HEIGHT-1;
+      y1 = HEIGHT - 1;
     }
 
-    dirty_area.x = min(rect.x, dirty_area.x);
-    dirty_area.y = min(rect.y, dirty_area.y);
+    dirty_area.left = std::min(rect.left, dirty_area.left);
+    dirty_area.top = std::min(rect.top, dirty_area.top);
 
-    if (dirty_area.x < 0) { dirty_area.x = 0; }
-    if (dirty_area.y < 0) { dirty_area.y = 0; }
-
-    dirty_area.w = x1 - dirty_area.x;
-    dirty_area.h = y1 - dirty_area.y;
+    dirty_area.width = x1 - dirty_area.left;
+    dirty_area.height = y1 - dirty_area.top;
   }
 
   void redraw_screen(bool full_refresh = false) {
-    if (full_refresh || dirty_area.w <= 0 || dirty_area.h <= 0) {
-      ipc::msg_rect buf = {};
-      buf.x = WIDTH;
-      buf.y = HEIGHT;
-      buf.w = 0;
-      buf.h = 0;
-      MSGQ.send(buf);
+    ipc::swtfb_update update;
+    if (full_refresh || dirty_area.width <= 0 || dirty_area.height <= 0) {
+      ipc::swtfb_rect buf = {};
+      buf.left = WIDTH;
+      buf.top = HEIGHT;
+      buf.width = 0;
+      buf.height = 0;
+      update.update_region = buf;
     } else {
-      MSGQ.send(dirty_area);
+      update.update_region = dirty_area;
     }
+
+    MSGQ.send(update);
     reset_dirty();
   }
 };
+}
 
+#ifndef __SH_BUILD
 int main() {
   srand(time(NULL));
   printf("SENDING MSG UPDATE\n");
 
-  SwtFB fb;
+  swtfb::SwtFB fb;
 
-  for (int i = 0; i < WIDTH*HEIGHT; i++) {
-    fb.fbmem[i] = i;
+  int offset = (rand() % 1024);
+
+  for (unsigned int i = 0; i < WIDTH * HEIGHT; i++) {
+    fb.fbmem[i] = i + offset;
   }
 
-  int x = (rand() % WIDTH);
-  int y = (rand() % HEIGHT);
-  if (x > WIDTH) { x -= WIDTH; };
-  if (y > HEIGHT) { y -= HEIGHT; };
-  int w = 200 + (rand() % 10+1) * 50;
-  int h = 200 + (rand() % 10+1) * 50;
+  uint32_t x = (rand() % WIDTH);
+  uint32_t y = (rand() % HEIGHT);
+  if (x > WIDTH) {
+    x -= WIDTH;
+  };
+  if (y > HEIGHT) {
+    y -= HEIGHT;
+  };
+  uint32_t w = 200 + (rand() % 10 + 1) * 50;
+  uint32_t h = 200 + (rand() % 10 + 1) * 50;
 
-  cout << x << " " << y << " " << w << " " << h << endl;
-  fb.mark_dirty({x, y, w, h});
+  fb.mark_dirty({.left = x, .top = y, w, h});
   fb.redraw_screen();
 }
+#endif

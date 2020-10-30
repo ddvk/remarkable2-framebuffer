@@ -3,7 +3,7 @@
 ######################################################################
 
 TEMPLATE = lib
-TARGET = rm2fb_server
+TARGET = rm2fb_demo
 INCLUDEPATH += .
 
 # The following define makes your compiler warn you if you use any
