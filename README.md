@@ -73,18 +73,6 @@ channels. if you mention this repo, someone will probably respond
 
 [see this proposal](https://github.com/ddvk/remarkable2-framebuffer/issues/4)
 
-The summary is:
-
-The current way we are interacting with the framebuffer requires modifying a
-binary - we figure it is better to isolate that into one process and the rest
-of the programs can use simple IPC to communicate with that process. Then as
-we learn more about the FB, we can fix the server without having to fix each
-client.
-
-In addition, using a server/client API will potentially make new features
-possible that were not doable on the rM1, since it will enforce that apps
-have some sort of coordination between them.
-
 * should I distribute apps that use the LD_PRELOAD method of drawing to the framebuffer?
 
 no, probably not. let's figure out a design that doesn't require every app to
