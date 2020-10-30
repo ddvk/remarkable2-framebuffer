@@ -51,17 +51,29 @@ public:
   }
 
   void DrawLine() {
-
-      for(int i=0; i < maxHeight; i++) {
-          img->setPixel(100, i, 0xF0);
-          QRect rect(99, i+1, 2, 2);
-          sendUpdate(0, rect, 1, 4); 
+      cout << "drawing a line " << endl;
+      cout << "send update" << endl;
+      for(int i=100; i < maxHeight; i++) {
+          QRect rect(100, i, 200, 100);
+          img->setPixel(100, i, 0xFF);
           printf(".");
+          sendUpdate(instance, rect,  1, 0); 
       }
+  }
+  void FullScreen() {
+    QRect rect(0, 0, maxWidth, maxHeight);
+    QPainter painter(img);
+    painter.drawText(rect, 132, "Blah");
+    painter.end();
+    //sendUpdate(0, rect, 3, 3); //slow
+    //sendUpdate(0, rect, 3, 2); //slow but nice
+    //sendUpdate(0, rect, 2, 1); //flashing background
+    //sendUpdate(0, rect, 2, 0); //flashing background
+    sendUpdate(instance, rect, 3, 3); 
   }
 
   void DrawText(int i, char *text, bool wait) {
-    QRect rect(100, i, 200, 100);
+    QRect rect(0, i, 200, 100);
     QPainter painter(img);
     painter.drawText(rect, 132, text);
     painter.end();
@@ -70,7 +82,7 @@ public:
     //sendUpdate(0, rect, 3, 2); //slow but nice
     //sendUpdate(0, rect, 2, 1); //flashing background
     //sendUpdate(0, rect, 2, 0); //flashing background
-    sendUpdate(0, rect, 2, 4); 
+    sendUpdate(instance, rect,  3, 2); 
   }
 
   void DrawRaw(uint16_t *buffer, int x, int y, int w, int h) {
@@ -88,7 +100,7 @@ public:
 
     QRect rect(x, y, w, h);
     ClockWatch cz;
-    sendUpdate(0, rect, 3, 2);
+    sendUpdate(instance, rect, 3, 2);
     cout << "Update took " << cz.elapsed() << "s" << endl;
   }
 
@@ -98,8 +110,8 @@ private:
   QImage *img;
 
   // black magic
-  uint32_t *(*getInstance)(void) = (uint32_t * (*)(void))0x224BC;
-  void (*sendUpdate)(void *, ...) = (void (*)(void *, ...))0x2257C;
+  uint32_t *(*getInstance)(void) = (uint32_t * (*)(void)) 0x21F54;
+  void (*sendUpdate)(void *, ...) = (void (*)(void *, ...)) 0x21A34;
 };
 
 extern "C" {
@@ -108,11 +120,14 @@ static void _libhook_init() { printf("LIBHOOK INIT\n"); }
 
 int main(int argc, char **argv, char **envp) {
   SwtFB fb;
+  printf("drew line\n");
+  // fb.FullScreen();
   fb.DrawLine();
   for (int i = 0; i < 1000; i += 50) {
     fb.DrawText(i, "Testing", false);
   }
   fb.DrawText(1800, "Done", true);
+  fb.FullScreen();
 
   printf("END of our main\n");
 }

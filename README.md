@@ -27,7 +27,7 @@ LD_PRELOAD=/path/to/librm2fb.so /usr/bin/remarkable-shutdown
 ```
 
 NOTE: For this to work, your binary should have the md5sum of
-`dbd4e8dfeb8810c88fc9d5a902e65961`
+`fec600ccae7743dd4e5d8046427244c0` from rm2 2.4.1.30
 
 ## contributing
 
