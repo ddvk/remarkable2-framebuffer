@@ -29,6 +29,7 @@ struct mxcfb_rect {
 // TODO: decide if uint32_t is right size for temp, flags, dither_mode and
 // quant_bit which were 'int' previously
 struct mxcfb_update_data {
+  uint32_t mtype; // this is necessary for msgsnd
   struct mxcfb_rect update_region;
   uint32_t waveform_mode;
   uint32_t update_mode;
@@ -66,6 +67,7 @@ static uint16_t *get_shared_buffer(string name = "/swtfb.01") {
   return mem;
 }
 
+#define SWTFB1_UPDATE 1
 class Queue {
 public:
   unsigned long id;
@@ -78,9 +80,15 @@ public:
   void send(swtfb_update msg) {
     // TODO: read return value
     auto rect = msg.update_region;
-    cout << rect.left << " " << rect.top << " " << rect.width << " "
+    msg.mtype = SWTFB1_UPDATE;
+
+    cout << msg.mtype << " MSG Q SEND " << rect.left << " " << rect.top << " " << rect.width << " "
          << rect.height << endl;
-    msgsnd(msqid, (void *)&msg, sizeof(msg), 0);
+    int wrote = msgsnd(msqid, (void *)&msg, sizeof(msg), 0);
+    if (wrote != 0) {
+      cout << "ERRNO " << errno << endl;
+    }
+
   }
 
   swtfb_update recv() {
@@ -88,8 +96,6 @@ public:
     auto len = msgrcv(msqid, &buf, sizeof(buf), 0, 0);
     if (len >= 0) {
       auto rect = buf.update_region;
-      cout << rect.left << " " << rect.top << " " << rect.width << " "
-           << rect.height << endl;
       return buf;
     } else {
       std::cout << "ERR " << len << " " << errno << endl;

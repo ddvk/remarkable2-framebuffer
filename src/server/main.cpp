@@ -23,7 +23,7 @@ int main(int, char **, char **) {
   SwtFB fb;
   uint16_t *shared_mem = ipc::get_shared_buffer();
 
-  printf("WAITING FOR SEND UPDATE ON MSG Q");
+  printf("WAITING FOR SEND UPDATE ON MSG Q\n");
   while (true) {
     ipc::swtfb_update buf = MSGQ.recv();
     auto rect = buf.update_region;

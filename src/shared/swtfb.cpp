@@ -88,9 +88,6 @@ public:
     int stride = maxWidth;
     int x0 = x, y0 = y, x1 = x0 + w, y1 = y0 + h;
 
-    cout << "CORNERS"
-         << " " << x0 << " " << y0 << " " << x1 << " " << y1 << endl;
-
     for (int i = y0; i < y1; i++) {
       memcpy(&dest[i * stride + x0], &buffer[i * stride + x0],
              (x1 - x0) * sizeof(uint16_t));
@@ -98,8 +95,8 @@ public:
 
     QRect rect(x, y, w, h);
     ClockWatch cz;
-    sendUpdate(instance, rect, 3, 2);
-    cout << "Update took " << cz.elapsed() << "s" << endl;
+    sendUpdate(instance, rect, 1, 4);
+    cout << "Total Update took " << cz.elapsed() << "s" << endl;
   }
 
 private:
