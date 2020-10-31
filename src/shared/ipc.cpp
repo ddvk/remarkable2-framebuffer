@@ -29,7 +29,7 @@ struct mxcfb_rect {
 // TODO: decide if uint32_t is right size for temp, flags, dither_mode and
 // quant_bit which were 'int' previously
 struct mxcfb_update_data {
-  uint32_t mtype; // this is necessary for msgsnd
+  long mtype; // this is necessary for msgsnd
   struct mxcfb_rect update_region;
   uint32_t waveform_mode;
   uint32_t update_mode;
