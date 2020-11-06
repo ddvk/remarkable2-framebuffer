@@ -82,7 +82,7 @@ public:
     sendUpdate(instance, rect, 3, 2);
   }
 
-  void DrawRaw(uint16_t *buffer, int x, int y, int w, int h) {
+  void DrawRaw(uint16_t *buffer, int x, int y, int w, int h, int mode = 2, int async=0) {
     uint16_t *dest = (uint16_t *)img->bits();
 
     int stride = maxWidth;
@@ -95,7 +95,9 @@ public:
 
     QRect rect(x, y, w, h);
     ClockWatch cz;
-    sendUpdate(instance, rect, 1, 4);
+    // 2nd param:
+    // 5 is flashing
+    sendUpdate(instance, rect, 2, 0);
     cout << "Total Update took " << cz.elapsed() << "s" << endl;
   }
 

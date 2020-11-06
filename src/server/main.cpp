@@ -4,7 +4,9 @@
 
 #include <cstdio>
 #include <dlfcn.h>
+#include <mutex>
 #include <stdint.h>
+#include <thread>
 
 #include "../shared/ipc.cpp"
 #include "../shared/swtfb.cpp"
@@ -23,23 +25,48 @@ int main(int, char **, char **) {
   SwtFB fb;
   uint16_t *shared_mem = ipc::get_shared_buffer();
 
+  mutex draw_queue_m;
+  vector<mxcfb_update_data> updates;
+
+  auto th = new thread([&]() {
+    while (true) {
+      bool was_dirty = false;
+      mxcfb_rect dirty_area;
+      swtfb::reset_dirty(dirty_area);
+
+      draw_queue_m.lock();
+      for (auto update : updates) {
+        auto rect = update.update_region;
+        if (was_dirty) {
+          cout << "Dirty Region: " << rect.left << " " << rect.top << " "
+               << rect.width << " " << rect.height << endl;
+        }
+
+        int mode = update.waveform_mode;
+        if (mode <= 4) { mode = 1; }
+        if (mode > 4) { mode = 2; }
+
+        fb.DrawRaw(shared_mem, rect.left, rect.top, rect.width, rect.height,
+                   mode, update.update_marker > 0);
+
+        was_dirty = true;
+      }
+      updates.clear();
+      draw_queue_m.unlock();
+
+      usleep(1000 * 50);
+    }
+  });
+
   printf("WAITING FOR SEND UPDATE ON MSG Q\n");
   while (true) {
-    ipc::swtfb_update buf = MSGQ.recv();
+    mxcfb_update_data buf = MSGQ.recv();
     auto rect = buf.update_region;
-    cout << rect.left << " " << rect.top << " " << rect.width << " "
-         << rect.height << endl;
-    fb.DrawRaw(shared_mem, rect.left, rect.top, rect.width, rect.height);
 
-#ifdef DEBUG_MSGQ
-    for (int i = 0; i < 10; i++) {
-      printf("%i, ", shared_mem[i]);
-    }
-    printf("\n");
-    memset(shared_mem, 0, 100);
-#endif
+    draw_queue_m.lock();
+    updates.push_back(buf);
+    draw_queue_m.unlock();
   }
-  printf("END of our main\n");
 }
 
 int __libc_start_main(int (*_main)(int, char **, char **), int argc,

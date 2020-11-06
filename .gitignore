@@ -3,3 +3,5 @@ Makefile
 *.user
 .qmake.stash
 rm2-framebuffer
+*.so.*
+*.so
