@@ -35,12 +35,14 @@ int main(int, char **, char **) {
       swtfb::reset_dirty(dirty_area);
 
       draw_queue_m.lock();
-      for (auto update : updates) {
+			auto todo = updates;
+      updates.clear();
+      draw_queue_m.unlock();
+
+      for (auto update : todo) {
         auto rect = update.update_region;
-        if (was_dirty) {
-          cout << "Dirty Region: " << rect.left << " " << rect.top << " "
-               << rect.width << " " << rect.height << endl;
-        }
+				cout << "Dirty Region: " << rect.left << " " << rect.top << " "
+						 << rect.width << " " << rect.height << endl;
 
         int mode = update.waveform_mode;
         if (mode <= 4) { mode = 1; }
@@ -49,12 +51,9 @@ int main(int, char **, char **) {
         fb.DrawRaw(shared_mem, rect.left, rect.top, rect.width, rect.height,
                    mode, update.update_marker > 0);
 
-        was_dirty = true;
       }
-      updates.clear();
-      draw_queue_m.unlock();
+      usleep(1000);
 
-      usleep(1000 * 50);
     }
   });
 

@@ -7,6 +7,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <chrono>
+
 #include <linux/limits.h>
 
 #include "mxcfb.h"
@@ -91,7 +93,14 @@ static uint16_t *get_shared_buffer(string name = "/swtfb.01") {
 }
 
 #define SWTFB1_UPDATE 1
+using namespace chrono;
 class Queue {
+	uint64_t get_now() {
+		return duration_cast< milliseconds >(
+				system_clock::now().time_since_epoch()
+		).count();
+	}
+
 public:
   unsigned long id;
   int msqid = -1;
@@ -104,7 +113,7 @@ public:
     // TODO: read return value
     #ifdef DEBUG
     auto rect = msg.update_region;
-    cerr << " MSG Q SEND " << rect.left << " " << rect.top << " "
+    cerr << get_now() << " MSG Q SEND " << rect.left << " " << rect.top << " "
          << rect.width << " " << rect.height << endl;
     #endif
 
@@ -122,7 +131,8 @@ public:
     auto len = msgrcv(msqid, &buf, sizeof(buf), 0, 0);
     #ifdef DEBUG
     auto rect = buf.update.update_region;
-    cerr << " MSG Q RECV " << rect.left << " " << rect.top << " "
+
+    cerr << get_now() << " MSG Q RECV " << rect.left << " " << rect.top << " "
          << rect.width << " " << rect.height << endl;
     #endif
     if (len >= 0) {

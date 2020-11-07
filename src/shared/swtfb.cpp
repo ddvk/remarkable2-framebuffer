@@ -97,7 +97,7 @@ public:
     ClockWatch cz;
     // 2nd param:
     // 5 is flashing
-    sendUpdate(instance, rect, 2, 0);
+    sendUpdate(instance, rect, mode, async);
     cout << "Total Update took " << cz.elapsed() << "s" << endl;
   }
 
