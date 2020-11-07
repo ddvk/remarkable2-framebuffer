@@ -1,6 +1,6 @@
 QT += gui
 
-CONFIG += c++11 console
+CONFIG += c++17 console
 CONFIG -= app_bundle
 
 # You can make your code fail to compile if it uses deprecated APIs.
@@ -14,9 +14,10 @@ SOURCES += \
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
-else: unix:!android: target.path = /home/root/$${TARGET}/bin
+else: unix:!android: target.path = /tmp/$${TARGET}
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
     fbmanager.h \
+    inkwave.h \
     wbfreader.h

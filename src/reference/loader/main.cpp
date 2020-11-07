@@ -12,6 +12,7 @@
 #include <QMetaMethod>
 #include <QObject>
 #include <QDebug>
+#include <atomic>
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -78,8 +79,8 @@ public:
     app = new QGuiApplication(argc, argv);
     auto ptr = getInstance();
     instance = reinterpret_cast<QObject*> (ptr);
-    dump_qtClass(instance);
     img = (QImage *)(ptr + 8);
+    dump_qtClass(instance);
     printf("INSTANCE ADDRESS: 0x%lx\n", instance);
 
     cout << img->width() << " " << img->height() << " " << img->depth() << endl;
@@ -114,7 +115,7 @@ public:
     //sendUpdate(0, rect, 3, 2); //slow but nice
     //sendUpdate(0, rect, 2, 1); //flashing background
     //sendUpdate(0, rect, 2, 0); //flashing background
-    SendUpdate(rect, 3, 2, false); 
+    SendUpdate(rect, 3, 2, true); 
     //sendUpdate(instance, rect, 3, 2); 
   }
 
@@ -168,7 +169,6 @@ volatile int counter = 0;
 int main(int argc, char **argv, char **envp) {
   SwtFB fb;
   int i = 0;
-  fb.DrawLine();
   while(true){
       printf("stating screen \n");
       counter = 0;

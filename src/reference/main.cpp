@@ -5,12 +5,15 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include <stdio.h>
+#include <inkwave.h>
+#include <experimental/filesystem>
 
 using namespace std;
 
 
 // load the serial number
 uint8_t* serial() {
+    char *device = "/dev/mmcblk2boot1";
 
 
 }
@@ -53,12 +56,20 @@ uint8_t *get_waveform() {
     return buffer;
 
 }
+struct bongo {
+    int a;
+    int b;
+};
 
 int main()
 {
+    bongo *b = new bongo;
+    b->a = 10;
+    cout << b->a << endl;
     auto waveform = get_waveform();
-    FBManager fb;
-    fb.SendUpdate();
+    waveform_data_header wbf_header;
+
+    cout << wbf_header.checksum << endl;
     cout << "Done" << endl;
     return 0; 
 }
