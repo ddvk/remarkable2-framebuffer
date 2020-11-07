@@ -26,7 +26,7 @@ int main(int, char **, char **) {
   uint16_t *shared_mem = ipc::get_shared_buffer();
 
   mutex draw_queue_m;
-  vector<mxcfb_update_data> updates;
+  vector<swtfb_update> updates;
 
   auto th = new thread([&]() {
     while (true) {
@@ -38,33 +38,38 @@ int main(int, char **, char **) {
       updates.clear();
       draw_queue_m.unlock();
 
-      for (auto update : todo) {
-        auto rect = update.update_region;
-        #ifdef DEBUG
+      for (auto s : todo) {
+        auto mxcfb_update = s.update;
+        auto rect = mxcfb_update.update_region;
+        #ifdef DEBUG_DIRTY
 				std::cerr << "Dirty Region: " << rect.left << " " << rect.top << " "
 						 << rect.width << " " << rect.height << endl;
         #endif
 
-        int mode = update.waveform_mode;
-        if (update.waveform_mode > 3) {
+        int mode = mxcfb_update.waveform_mode;
+        if (mxcfb_update.waveform_mode > 3) {
           mode = 3;
         }
 
 				int size = rect.width * rect.height;
 				if (size > 500 * 500) {
 
-          #ifdef DEBUG
-          cerr << "Using thread " << rect.width << " " << rect.height << endl;
-          #endif
           auto nt = new thread([&]() {
             fb.DrawRaw(shared_mem, rect.left, rect.top, rect.width, rect.height,
                        mode, 0);
+            #ifdef DEBUG_TIMING
+            cerr << get_now() - s.ms << "ms threaded E2E " << rect.width << " " << rect.height << endl;
+            #endif
           });
           nt->detach();
 
         } else {
           fb.DrawRaw(shared_mem, rect.left, rect.top, rect.width, rect.height,
                      mode, 0);
+
+          #ifdef DEBUG_TIMING
+          cerr << get_now() - s.ms << "ms E2E " << rect.width << " " << rect.height << endl;
+          #endif
         }
 
       }
@@ -76,7 +81,7 @@ int main(int, char **, char **) {
 
   printf("WAITING FOR SEND UPDATE ON MSG Q\n");
   while (true) {
-    mxcfb_update_data buf = MSGQ.recv();
+    swtfb_update buf = MSGQ.recv();
 
     draw_queue_m.lock();
     updates.push_back(buf);

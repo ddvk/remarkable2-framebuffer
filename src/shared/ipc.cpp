@@ -28,6 +28,9 @@ namespace swtfb {
 struct swtfb_update {
   long mtype;
   struct mxcfb_update_data update;
+  #ifdef DEBUG_TIMING
+  uint64_t ms;
+  #endif
 };
 
 unsigned int WIDTH = 1404;
@@ -115,23 +118,26 @@ public:
     swtfb_update swtfb_msg;
     swtfb_msg.mtype = 1;
     swtfb_msg.update = msg;
+
+    #ifdef DEBUG_TIMING
+    swtfb_msg.ms = get_now();
+    #endif
     int wrote = msgsnd(msqid, (void *)&swtfb_msg, sizeof(swtfb_msg), 0);
     if (wrote != 0) {
       cerr << "ERRNO " << errno << endl;
     }
   }
 
-  mxcfb_update_data recv() {
+  swtfb_update recv() {
     swtfb_update buf;
     auto len = msgrcv(msqid, &buf, sizeof(buf), 0, 0);
-    #ifdef DEBUG
+    #ifdef DEBUG_TIMING
     auto rect = buf.update.update_region;
-
-    cerr << get_now() << " MSG Q RECV " << rect.left << " " << rect.top << " "
+    cerr << get_now()  - buf.ms << "ms MSG Q RECV " << rect.left << " " << rect.top << " "
          << rect.width << " " << rect.height << endl;
     #endif
     if (len >= 0) {
-      return buf.update;
+      return buf;
     } else {
       cerr << "ERR " << len << " " << errno << endl;
     }
