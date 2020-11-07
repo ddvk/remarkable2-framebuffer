@@ -4,26 +4,14 @@
 #include <QPainter>
 #include <QRect>
 #include <iostream>
+#include <QObject>
 
-#include <chrono>
 #include "now.cpp"
+#include "qtdump.cpp"
 
 using namespace std;
 
 namespace swtfb {
-class ClockWatch {
-public:
-  chrono::high_resolution_clock::time_point t1;
-
-  ClockWatch() { t1 = chrono::high_resolution_clock::now(); }
-
-  auto elapsed() {
-    auto t2 = chrono::high_resolution_clock::now();
-    chrono::duration<double> time_span =
-        chrono::duration_cast<chrono::duration<double>>(t2 - t1);
-    return time_span.count();
-  }
-};
 
 // todo: make it singleton
 class SwtFB {
@@ -31,7 +19,9 @@ class SwtFB {
   const int maxHeight = 1872;
 
 public:
-  SwtFB() { initQT(); }
+  SwtFB() {
+    initQT();
+  }
 
   void initQT() {
     qputenv("QMLSCENE_DEVICE", "epaper");
@@ -43,9 +33,27 @@ public:
     app = new QGuiApplication(argc, argv);
     instance = getInstance();
     img = (QImage *)(instance + 8);
-    printf("INSTANCE ADDRESS: 0x%lx\n", instance);
+    dump_qtClass(instance);
+
+
 
     cout << img->width() << " " << img->height() << " " << img->depth() << endl;
+  }
+
+  void clearScreen() {
+    QObject *object = static_cast<QObject *>((QObject*) instance);
+    object->qt_metacall(QMetaObject::InvokeMetaMethod,
+      object->metaObject()->indexOfProperty("clearScreen"), 0);
+  }
+
+  void sendUpdate(uint32_t *a, QRect rect, int waveform, int flags=0, bool sync=0) {
+    sendUpdateFunc(a, rect, waveform, flags, sync);
+//    QObject *object = static_cast<QObject *>((QObject*) instance);
+//    const QMetaObject *meta = object->metaObject();
+//    int index = object->metaObject()->indexOfProperty("clearScreen");
+//    QMetaMethod method = meta->method(index);
+//    method.invoke(object, Q_ARG(QRect, rect), Q_ARG(int, waveform),
+//      Q_ARG(int, flags), Q_ARG(bool, sync));
   }
 
   void DrawLine() {
@@ -99,7 +107,10 @@ public:
     // 2nd param:
     // 5 is flashing
     sendUpdate(instance, rect, mode, async);
+
+    #ifdef DEBUG
     cerr << get_now() << " Total Update took " << cz.elapsed() << "s" << endl;
+    #endif
   }
 
 private:
@@ -110,7 +121,7 @@ private:
   // black magic
   // fec600ccae7743dd4e5d8046427244c0
   uint32_t *(*getInstance)(void) = (uint32_t * (*)(void))0x21F54;
-  void (*sendUpdate)(void *, ...) = (void (*)(void *, ...))0x21A34;
+  void (*sendUpdateFunc)(void *, ...) = (void (*)(void *, ...))0x21A34;
   //
   // dbd4e8dfeb8810c88fc9d5a902e65961
   // uint32_t *(*getInstance)(void) = (uint32_t * (*)(void))0x224BC;

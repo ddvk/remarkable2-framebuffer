@@ -52,7 +52,7 @@ int main(int, char **, char **) {
         mode = 1;
 
 				int size = rect.width * rect.height;
-				if (size > 500) {
+				if (size > 500 * 500) {
 
           cerr << "Using thread" << rect.width << " " << rect.height << endl;
           auto nt = new thread([&]() {
