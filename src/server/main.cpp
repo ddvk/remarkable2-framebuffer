@@ -1,4 +1,7 @@
-﻿#ifndef _GNU_SOURCE
+﻿#include "../shared/ipc.cpp"
+#include "../shared/swtfb.cpp"
+
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
 
@@ -8,8 +11,6 @@
 #include <stdint.h>
 #include <thread>
 
-#include "../shared/ipc.cpp"
-#include "../shared/swtfb.cpp"
 
 using namespace std;
 using namespace swtfb;
