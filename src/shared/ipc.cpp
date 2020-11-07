@@ -7,9 +7,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <chrono>
+
 
 #include <linux/limits.h>
+
+#include "now.cpp"
 
 #include "mxcfb.h"
 
@@ -93,14 +95,7 @@ static uint16_t *get_shared_buffer(string name = "/swtfb.01") {
 }
 
 #define SWTFB1_UPDATE 1
-using namespace chrono;
 class Queue {
-	uint64_t get_now() {
-		return duration_cast< milliseconds >(
-				system_clock::now().time_since_epoch()
-		).count();
-	}
-
 public:
   unsigned long id;
   int msqid = -1;

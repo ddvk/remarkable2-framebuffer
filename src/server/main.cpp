@@ -41,15 +41,29 @@ int main(int, char **, char **) {
 
       for (auto update : todo) {
         auto rect = update.update_region;
-				cout << "Dirty Region: " << rect.left << " " << rect.top << " "
+        #ifdef DEBUG
+				std::cerr << "Dirty Region: " << rect.left << " " << rect.top << " "
 						 << rect.width << " " << rect.height << endl;
+        #endif
 
         int mode = update.waveform_mode;
         if (mode <= 4) { mode = 1; }
         if (mode > 4) { mode = 2; }
+        mode = 1;
 
-        fb.DrawRaw(shared_mem, rect.left, rect.top, rect.width, rect.height,
-                   mode, update.update_marker > 0);
+				int size = rect.width * rect.height;
+				if (size > 500) {
+
+          cerr << "Using thread" << rect.width << " " << rect.height << endl;
+          auto nt = new thread([&]() {
+            fb.DrawRaw(shared_mem, rect.left, rect.top, rect.width, rect.height,
+                       mode, 1);
+          });
+
+        } else {
+          fb.DrawRaw(shared_mem, rect.left, rect.top, rect.width, rect.height,
+                     mode, 1);
+        }
 
       }
       usleep(1000);

@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include <chrono>
+#include "now.cpp"
 
 using namespace std;
 
@@ -98,7 +99,7 @@ public:
     // 2nd param:
     // 5 is flashing
     sendUpdate(instance, rect, mode, async);
-    cout << "Total Update took " << cz.elapsed() << "s" << endl;
+    cerr << get_now() << " Total Update took " << cz.elapsed() << "s" << endl;
   }
 
 private:
