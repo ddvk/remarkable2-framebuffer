@@ -50,8 +50,11 @@ public:
     f_sendUpdate(a, rect, waveform, flags, sync);
 //    QObject *object = static_cast<QObject *>((QObject*) instance);
 //    const QMetaObject *meta = object->metaObject();
-//    int index = object->metaObject()->indexOfProperty("clearScreen");
+//    int index = object->metaObject()->indexOfProperty("sendUpdate");
 //    QMetaMethod method = meta->method(index);
+//    TODO: why does below not work?
+//    * Does int not work for waveform/flags?
+//    * Is index wrong?
 //    method.invoke(object, Q_ARG(QRect, rect), Q_ARG(int, waveform),
 //      Q_ARG(int, flags), Q_ARG(bool, sync));
   }
