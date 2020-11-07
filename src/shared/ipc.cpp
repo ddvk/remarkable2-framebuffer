@@ -30,8 +30,8 @@ struct swtfb_update {
   struct mxcfb_update_data update;
 };
 
-int WIDTH = 1404;
-int HEIGHT = 1872;
+unsigned int WIDTH = 1404;
+unsigned int HEIGHT = 1872;
 inline void reset_dirty(mxcfb_rect &dirty_area) {
   dirty_area.left = WIDTH;
   dirty_area.top = HEIGHT;

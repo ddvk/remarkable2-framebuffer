@@ -31,9 +31,9 @@ public:
     char *argv[0];
     int argc = 0;
     app = new QGuiApplication(argc, argv);
-    instance = getInstance();
+    instance = f_getInstance();
     img = (QImage *)(instance + 8);
-    dump_qtClass(instance);
+    // dump_qtClass(instance);
 
 
 
@@ -47,7 +47,7 @@ public:
   }
 
   void sendUpdate(uint32_t *a, QRect rect, int waveform, int flags=0, bool sync=0) {
-    sendUpdateFunc(a, rect, waveform, flags, sync);
+    f_sendUpdate(a, rect, waveform, flags, sync);
 //    QObject *object = static_cast<QObject *>((QObject*) instance);
 //    const QMetaObject *meta = object->metaObject();
 //    int index = object->metaObject()->indexOfProperty("clearScreen");
@@ -71,24 +71,15 @@ public:
     QPainter painter(img);
     painter.drawText(rect, 132, "Blah");
     painter.end();
-    // sendUpdate(0, rect, 3, 3); //slow
-    // sendUpdate(0, rect, 3, 2); //slow but nice
-    // sendUpdate(0, rect, 2, 1); //flashing background
-    // sendUpdate(0, rect, 2, 0); //flashing background
     sendUpdate(instance, rect, 3, 3);
   }
 
-  void DrawText(int i, char *text, bool wait) {
+  void DrawText(int i, char *text, bool wait=false) {
     QRect rect(0, i, 200, 100);
     QPainter painter(img);
     painter.drawText(rect, 132, text);
     painter.end();
-    int w = wait ? 2 : 0;
-    // sendUpdate(0, rect, 3, 3); //slow
-    // sendUpdate(0, rect, 3, 2); //slow but nice
-    // sendUpdate(0, rect, 2, 1); //flashing background
-    // sendUpdate(0, rect, 2, 0); //flashing background
-    sendUpdate(instance, rect, 3, 2);
+    sendUpdate(instance, rect, 3, wait ? 0 : 1);
   }
 
   void DrawRaw(uint16_t *buffer, int x, int y, int w, int h, int mode = 2, int async=0) {
@@ -104,9 +95,7 @@ public:
 
     QRect rect(x, y, w, h);
     ClockWatch cz;
-    // 2nd param:
-    // 5 is flashing
-    sendUpdate(instance, rect, mode, async);
+    sendUpdate(instance, rect, mode, 0);
 
     #ifdef DEBUG
     cerr << get_now() << " Total Update took " << cz.elapsed() << "s" << endl;
@@ -120,11 +109,11 @@ private:
 
   // black magic
   // fec600ccae7743dd4e5d8046427244c0
-  uint32_t *(*getInstance)(void) = (uint32_t * (*)(void))0x21F54;
-  void (*sendUpdateFunc)(void *, ...) = (void (*)(void *, ...))0x21A34;
+  uint32_t *(*f_getInstance)(void) = (uint32_t * (*)(void))0x21F54;
+  void (*f_sendUpdate)(void *, ...) = (void (*)(void *, ...))0x21A34;
   //
   // dbd4e8dfeb8810c88fc9d5a902e65961
-  // uint32_t *(*getInstance)(void) = (uint32_t * (*)(void))0x224BC;
-  // void (*sendUpdate)(void *, ...) = (void (*)(void *, ...))0x2257C;
+  // uint32_t *(*f_getInstance)(void) = (uint32_t * (*)(void))0x224BC;
+  // void (*f_sendUpdate)(void *, ...) = (void (*)(void *, ...))0x2257C;
 };
 } // namespace swtfb

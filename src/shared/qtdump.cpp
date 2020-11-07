@@ -1,4 +1,5 @@
 #pragma once
+
 #include <QObject>
 #include <QMetaMethod>
 #include <QMetaProperty>
@@ -22,6 +23,16 @@ void dump_qtClass(void* ptr) {
   for (int id = 0; id < meta->propertyCount(); ++id) {
     const QMetaProperty property = meta->property(id);
     qDebug() << property.name() << property.type();
+  }
+
+  qDebug() << "Enumerators";
+  for (int id = 0; id < meta->enumeratorCount(); ++id) {
+    const QMetaEnum en = meta->enumerator(id);
+    qDebug() << en.name();
+    for (int j = 0; j < en.keyCount(); j++) {
+      qDebug() << en.key(j);
+    }
+    qDebug() << "";
   }
 }
 

@@ -30,7 +30,6 @@ int main(int, char **, char **) {
 
   auto th = new thread([&]() {
     while (true) {
-      bool was_dirty = false;
       mxcfb_rect dirty_area;
       swtfb::reset_dirty(dirty_area);
 
@@ -47,39 +46,43 @@ int main(int, char **, char **) {
         #endif
 
         int mode = update.waveform_mode;
-        if (mode <= 4) { mode = 1; }
-        if (mode > 4) { mode = 2; }
-        mode = 1;
+        if (update.waveform_mode > 3) {
+          mode = 3;
+        }
 
 				int size = rect.width * rect.height;
 				if (size > 500 * 500) {
 
-          cerr << "Using thread" << rect.width << " " << rect.height << endl;
+          #ifdef DEBUG
+          cerr << "Using thread " << rect.width << " " << rect.height << endl;
+          #endif
           auto nt = new thread([&]() {
             fb.DrawRaw(shared_mem, rect.left, rect.top, rect.width, rect.height,
-                       mode, 1);
+                       mode, 0);
           });
+          nt->detach();
 
         } else {
           fb.DrawRaw(shared_mem, rect.left, rect.top, rect.width, rect.height,
-                     mode, 1);
+                     mode, 0);
         }
 
       }
       usleep(1000);
 
     }
+
   });
 
   printf("WAITING FOR SEND UPDATE ON MSG Q\n");
   while (true) {
     mxcfb_update_data buf = MSGQ.recv();
-    auto rect = buf.update_region;
 
     draw_queue_m.lock();
     updates.push_back(buf);
     draw_queue_m.unlock();
   }
+  th->join();
 }
 
 int __libc_start_main(int (*_main)(int, char **, char **), int argc,
