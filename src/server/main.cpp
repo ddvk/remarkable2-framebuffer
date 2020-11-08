@@ -53,25 +53,12 @@ int main(int, char **, char **) {
         }
 
 				int size = rect.width * rect.height;
-				if (size > 500 * 500) {
+        fb.DrawRaw(shared_mem, rect.left, rect.top, rect.width, rect.height,
+            mode, 0);
 
-          auto nt = new thread([&]() {
-            fb.DrawRaw(shared_mem, rect.left, rect.top, rect.width, rect.height,
-                       mode, 0);
-            #ifdef DEBUG_TIMING
-            cerr << get_now() - s.ms << "ms threaded E2E " << rect.width << " " << rect.height << endl;
-            #endif
-          });
-          nt->detach();
-
-        } else {
-          fb.DrawRaw(shared_mem, rect.left, rect.top, rect.width, rect.height,
-                     mode, 0);
-
-          #ifdef DEBUG_TIMING
-          cerr << get_now() - s.ms << "ms E2E " << rect.width << " " << rect.height << endl;
-          #endif
-        }
+#ifdef DEBUG_TIMING
+        cerr << get_now() - s.ms << "ms E2E " << rect.width << " " << rect.height << endl;
+#endif
 
       }
       usleep(1000);
