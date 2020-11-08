@@ -30,6 +30,9 @@ static void _libhook_init() __attribute__((constructor));
 static void _libhook_init() {
   std::ios_base::Init i;
 
+  auto VERSION = "0.1";
+
+  setenv("RM2FB_SHIM", VERSION, true);
   SHARED_BUF = swtfb::ipc::get_shared_buffer();
 }
 
