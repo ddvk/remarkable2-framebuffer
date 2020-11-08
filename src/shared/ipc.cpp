@@ -11,6 +11,7 @@
 
 #include <linux/limits.h>
 
+#include "defines.h"
 #include "now.cpp"
 
 #include "mxcfb.h"
