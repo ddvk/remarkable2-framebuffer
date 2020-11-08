@@ -12,19 +12,19 @@ using namespace std;
 
 
 // load the serial number
-uint8_t* serial() {
+int serial() {
     char *device = "/dev/mmcblk2boot1";
-
-
+    return 292;
 }
 
 //TODO pass the serial
-uint8_t *get_waveform() {
+uint8_t *get_waveform(int lot) {
     const char* path = "/usr/share/remarkable";
     uint8_t *buffer = nullptr;
     DIR *dir;
     char fullPath[300];
     struct dirent *ent;
+    waveform_data_header wbf_header;
     if (dir = opendir(path)){
         while (ent = readdir(dir))
         {
@@ -42,13 +42,16 @@ uint8_t *get_waveform() {
 
                 // load the wavetable
                 buffer = (uint8_t*)malloc(size);
-
-
-                //TODO: check if correct one
-                break;
-                free(buffer);
+                fread(buffer, 1, size, f);
                 fclose(f);
 
+                memcpy(&wbf_header, buffer, sizeof(waveform_data_header));
+
+                if (lot == wbf_header.fpl_lot){
+                    break;
+
+                free(buffer);
+                buffer = nullptr;
             }
         }
         closedir(dir);
@@ -63,13 +66,12 @@ struct bongo {
 
 int main()
 {
-    bongo *b = new bongo;
-    b->a = 10;
-    cout << b->a << endl;
-    auto waveform = get_waveform();
-    waveform_data_header wbf_header;
+    auto serial = get_serial();
+    auto waveform = get_waveform(serial);
 
-    cout << wbf_header.checksum << endl;
-    cout << "Done" << endl;
+    if (!waveform) {
+        cout << "cannot find etc" << endl;
+    }
+
     return 0; 
 }
