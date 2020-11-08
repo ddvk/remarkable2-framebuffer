@@ -1,3 +1,3 @@
 #pragma once
 
-#define DEBUG_TIMING 0
+// #define DEBUG_TIMING
