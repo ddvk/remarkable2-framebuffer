@@ -24,7 +24,7 @@ swtfb::ipc::Queue MSGQ(msg_q_id);
 
 uint16_t *SHARED_BUF;
 
-auto IN_XOCHITL = false;
+bool IN_XOCHITL = false;
 
 extern "C" {
 struct stat;
@@ -35,6 +35,12 @@ static void _libhook_init() {
   auto VERSION = "0.1";
 
   setenv("RM2FB_SHIM", VERSION, true);
+
+  if (getenv("RM2FB_ACTIVE") != "") {
+    setenv("RM2FB_NESTED", "1", true);
+  } else {
+    setenv("RM2FB_ACTIVE", "1", true);
+  }
   SHARED_BUF = swtfb::ipc::get_shared_buffer();
 }
 
@@ -48,8 +54,6 @@ int open64(const char *pathname, int flags, mode_t mode = 0) {
   auto r = func_open(pathname, flags, mode);
   if (not IN_XOCHITL) {
     if (pathname == string("/dev/fb0")) {
-      std::cerr << "SETTING FB FD" << ' ' << r << ' ' << swtfb::ipc::SWTFB_FD
-                << std::endl;
       return swtfb::ipc::SWTFB_FD;
     }
   }
@@ -67,8 +71,6 @@ int open(const char *pathname, int flags, mode_t mode = 0) {
   auto r = func_open(pathname, flags, mode);
   if (not IN_XOCHITL) {
     if (pathname == string("/dev/fb0")) {
-      std::cerr << "SETTING FB FD" << ' ' << r << ' ' << swtfb::ipc::SWTFB_FD
-                << std::endl;
       return swtfb::ipc::SWTFB_FD;
     }
   }
@@ -136,12 +138,9 @@ int __libc_start_main(int (*_main)(int, char **, char **), int argc,
                       void (*fini)(void), void (*rtld_fini)(void),
                       void *stack_end) {
 
-  std::cerr << "ARGV" << ' ' << argv[0] << std::endl;
   if (string(argv[0]).find("xochitl") != string::npos) {
     IN_XOCHITL = true;
   }
-
-  fprintf(stderr, "LIBC START HOOK, IN XOCHITL? %i\n", IN_XOCHITL);
 
   typeof(&__libc_start_main) func_main =
       (typeof(&__libc_start_main))dlsym(RTLD_NEXT, "__libc_start_main");

@@ -22,7 +22,7 @@ extern "C" {
 static void _libhook_init() __attribute__((constructor));
 static void _libhook_init() { printf("LIBHOOK INIT\n"); }
 
-int main(int, char **, char **) {
+int server_main(int, char **, char **) {
   SwtFB fb;
   uint16_t *shared_mem = ipc::get_shared_buffer();
 
@@ -48,8 +48,13 @@ int main(int, char **, char **) {
         #endif
 
         int mode = mxcfb_update.waveform_mode;
-        if (mxcfb_update.waveform_mode > 3) {
-          mode = 3;
+
+        // For now, we are using two waveform modes:
+        // 1: DU - direct update, fast
+        // 2: GC16 - high fidelity (slow)
+        //
+        if (mxcfb_update.waveform_mode > 2) {
+          mode = 2;
         }
 
 				int size = rect.width * rect.height;
@@ -88,6 +93,6 @@ int __libc_start_main(int (*_main)(int, char **, char **), int argc,
   typeof(&__libc_start_main) func_main =
       (typeof(&__libc_start_main))dlsym(RTLD_NEXT, "__libc_start_main");
 
-  return func_main(main, argc, argv, init, fini, rtld_fini, stack_end);
+  return func_main(server_main, argc, argv, init, fini, rtld_fini, stack_end);
 };
 };

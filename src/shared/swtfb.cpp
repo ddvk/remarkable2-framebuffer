@@ -101,7 +101,6 @@ public:
     QRect rect(x, y, w, h);
     ClockWatch cz;
     sendUpdate(instance, rect, mode, 0, 0);
-    // SendUpdate(rect, mode, 0, 0);
 
     #ifdef DEBUG
     cerr << get_now() << " Total Update took " << cz.elapsed() << "s" << endl;

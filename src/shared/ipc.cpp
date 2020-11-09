@@ -82,13 +82,19 @@ static uint16_t *get_shared_buffer(string name = "/swtfb.01") {
     fd = shm_open(name.c_str(), O_RDWR, 0755);
   }
 
-  fprintf(stderr, "SHM FD: %i, errno: %i\n", fd, errno);
+  if (fd < 3) {
+    fprintf(stderr, "SHM FD: %i, errno: %i\n", fd, errno);
+  }
   SWTFB_FD = fd;
 
   ftruncate(fd, BUF_SIZE);
   uint16_t *mem =
       (uint16_t *)mmap(NULL, BUF_SIZE, PROT_WRITE, MAP_SHARED, fd, 0);
-  fprintf(stderr, "OPENED SHARED MEM: /dev/shm%s at %x, errno: %i\n", name.c_str(), mem, errno);
+
+
+  if (getenv("RM2FB_NESTED") == NULL) {
+    fprintf(stderr, "OPENED SHARED MEM: /dev/shm%s at %x, errno: %i\n", name.c_str(), mem, errno);
+  }
   return mem;
 }
 
