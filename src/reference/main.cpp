@@ -24,7 +24,11 @@ int decode(const string& serial){
     }
     int part1 = 0;
 
-    if (a > 'Z'){
+    if (a == '0'){
+        return part2;
+    }
+
+    if (a > 'Z' || a < 'A'){
         return -1;
     }
     if (a >= 'A' && a <= 'H') {
@@ -58,7 +62,7 @@ int get_serial() {
     string epdSerial;
 
     while (true) {
-        fileBuffer.read((char*)(&length), 4);
+        fileBuffer.read(reinterpret_cast<char*>(&length), 4);
         length = __builtin_bswap32(length);
         cout << "length: " << length;
         unique_ptr<char> tmpBuf (new char[length]);
@@ -70,7 +74,6 @@ int get_serial() {
             epdSerial = tmpBuf.get();
             break;
         }
-        tmpBuf.release();
         field++;
     }
 
@@ -98,6 +101,7 @@ uint8_t *get_waveform(int lot) {
 
             FILE *f = fopen(fullPath,"rb");
             fseek(f, 0, SEEK_END);
+            //TODO: read the header only
             size_t size = ftell(f);
             rewind(f);
 
@@ -132,13 +136,15 @@ void parse_wv(uint8_t* waveform){
 int main()
 {
     auto serial = get_serial();
+    if (serial < 0) {
+        cerr << "wrong lot/serial" << endl;
+
+    }
     auto waveform = get_waveform(serial);
 
     if (!waveform) {
-        cout << "cannot find etc" << endl;
+        cerr << "cannot load waveform file" << endl;
     }
     parse_wv(waveform);
-
-
     return 0; 
 }
