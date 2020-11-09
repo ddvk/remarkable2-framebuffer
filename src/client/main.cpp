@@ -24,6 +24,8 @@ swtfb::ipc::Queue MSGQ(msg_q_id);
 
 uint16_t *SHARED_BUF;
 
+auto IN_XOCHITL = false;
+
 extern "C" {
 struct stat;
 static void _libhook_init() __attribute__((constructor));
@@ -44,10 +46,12 @@ int open64(const char *pathname, int flags, mode_t mode = 0) {
   }
 
   auto r = func_open(pathname, flags, mode);
-  if (pathname == string("/dev/fb0")) {
-    std::cerr << "SETTING FB FD" << ' ' << r << ' ' << swtfb::ipc::SWTFB_FD
-              << std::endl;
-    return swtfb::ipc::SWTFB_FD;
+  if (not IN_XOCHITL) {
+    if (pathname == string("/dev/fb0")) {
+      std::cerr << "SETTING FB FD" << ' ' << r << ' ' << swtfb::ipc::SWTFB_FD
+                << std::endl;
+      return swtfb::ipc::SWTFB_FD;
+    }
   }
 
   return r;
@@ -61,67 +65,61 @@ int open(const char *pathname, int flags, mode_t mode = 0) {
   }
 
   auto r = func_open(pathname, flags, mode);
-  if (pathname == string("/dev/fb0")) {
-    std::cerr << "SETTING FB FD" << ' ' << r << ' ' << swtfb::ipc::SWTFB_FD
-              << std::endl;
-    return swtfb::ipc::SWTFB_FD;
+  if (not IN_XOCHITL) {
+    if (pathname == string("/dev/fb0")) {
+      std::cerr << "SETTING FB FD" << ' ' << r << ' ' << swtfb::ipc::SWTFB_FD
+                << std::endl;
+      return swtfb::ipc::SWTFB_FD;
+    }
   }
 
   return r;
 }
 
-int close(int fd) {
-  static int (*func_close)(int) = NULL;
-
-  if (!func_close) {
-    func_close = (int (*)(int))dlsym(RTLD_NEXT, "close");
-  }
-
-  return func_close(fd);
-}
-
 int ioctl(int fd, unsigned long request, char *ptr) {
   static int (*func_ioctl)(int, unsigned long, ...) = NULL;
+  if (not IN_XOCHITL) {
 
-  if (fd == swtfb::ipc::SWTFB_FD) {
-    if (request == MXCFB_SEND_UPDATE) {
+    if (fd == swtfb::ipc::SWTFB_FD) {
+      if (request == MXCFB_SEND_UPDATE) {
 
-      mxcfb_update_data *update = (mxcfb_update_data *)ptr;
-      MSGQ.send(*update);
-      return 0;
-    } else if (request == MXCFB_SET_AUTO_UPDATE_MODE) {
+        mxcfb_update_data *update = (mxcfb_update_data *)ptr;
+        MSGQ.send(*update);
+        return 0;
+      } else if (request == MXCFB_SET_AUTO_UPDATE_MODE) {
 
-      return 0;
-    } else if (request == MXCFB_WAIT_FOR_UPDATE_COMPLETE) {
+        return 0;
+      } else if (request == MXCFB_WAIT_FOR_UPDATE_COMPLETE) {
 
-      return 0;
-    }
+        return 0;
+      }
 
-    else if (request == FBIOGET_VSCREENINFO) {
+      else if (request == FBIOGET_VSCREENINFO) {
 
-      fb_var_screeninfo *screeninfo = (fb_var_screeninfo *)ptr;
-      screeninfo->xres = 1404;
-      screeninfo->yres = 1872;
-      screeninfo->grayscale = 0;
-      screeninfo->bits_per_pixel = 16;
-      return 0;
-    }
+        fb_var_screeninfo *screeninfo = (fb_var_screeninfo *)ptr;
+        screeninfo->xres = 1404;
+        screeninfo->yres = 1872;
+        screeninfo->grayscale = 0;
+        screeninfo->bits_per_pixel = 16;
+        return 0;
+      }
 
-    else if (request == FBIOPUT_VSCREENINFO) {
+      else if (request == FBIOPUT_VSCREENINFO) {
 
-      return 0;
-    } else if (request == FBIOGET_FSCREENINFO) {
+        return 0;
+      } else if (request == FBIOGET_FSCREENINFO) {
 
-      fb_fix_screeninfo *screeninfo = (fb_fix_screeninfo *)ptr;
-      screeninfo->smem_len = swtfb::ipc::BUF_SIZE;
-      screeninfo->smem_start = (unsigned long)SHARED_BUF;
-      screeninfo->line_length = swtfb::WIDTH * sizeof(uint16_t);
-      memcpy(screeninfo->id, FB_ID, sizeof(FB_ID));
-      screeninfo->id[sizeof(FB_ID)] = 0;
-      return 0;
-    } else {
-      std::cerr << "UNHANDLED IOCTL" << ' ' << request << std::endl;
-      return 0;
+        fb_fix_screeninfo *screeninfo = (fb_fix_screeninfo *)ptr;
+        screeninfo->smem_len = swtfb::ipc::BUF_SIZE;
+        screeninfo->smem_start = (unsigned long)SHARED_BUF;
+        screeninfo->line_length = swtfb::WIDTH * sizeof(uint16_t);
+        memcpy(screeninfo->id, FB_ID, sizeof(FB_ID));
+        screeninfo->id[sizeof(FB_ID)] = 0;
+        return 0;
+      } else {
+        std::cerr << "UNHANDLED IOCTL" << ' ' << request << std::endl;
+        return 0;
+      }
     }
   }
 
@@ -131,6 +129,24 @@ int ioctl(int fd, unsigned long request, char *ptr) {
   }
 
   return func_ioctl(fd, request, ptr);
+}
+
+int __libc_start_main(int (*_main)(int, char **, char **), int argc,
+                      char **argv, int (*init)(int, char **, char **),
+                      void (*fini)(void), void (*rtld_fini)(void),
+                      void *stack_end) {
+
+  std::cerr << "ARGV" << ' ' << argv[0] << std::endl;
+  if (string(argv[0]).find("xochitl") != string::npos) {
+    IN_XOCHITL = true;
+  }
+
+  fprintf(stderr, "LIBC START HOOK, IN XOCHITL? %i\n", IN_XOCHITL);
+
+  typeof(&__libc_start_main) func_main =
+      (typeof(&__libc_start_main))dlsym(RTLD_NEXT, "__libc_start_main");
+
+  return func_main(_main, argc, argv, init, fini, rtld_fini, stack_end);
 }
 };
 
