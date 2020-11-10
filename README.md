@@ -26,8 +26,6 @@ qmake
 make
 ```
 
-NOTE: For this to work, your binary should have the md5sum of
-`fec600ccae7743dd4e5d8046427244c0` from rm2 2.4.1.30
 
 ### Demo
 
@@ -91,19 +89,3 @@ probably not, but no guarantees
 
 use github issues or ping on the discord in one of the homebrew developer
 channels. if you mention this repo, someone will probably respond
-
-
-
-## Memory locations
-
-### 2.4.1.30
-
-md5sum fec600ccae7743dd4e5d8046427244c0
-0x21F54
-0x21A34
-
-### 2.3~
-
-md5sum dbd4e8dfeb8810c88fc9d5a902e65961
-0x224BC
-0x2257C
