@@ -20,11 +20,13 @@ ipc::Queue MSGQ(msg_q_id);
 
 extern "C" {
 static void _libhook_init() __attribute__((constructor));
-static void _libhook_init() { printf("LIBHOOK INIT\n"); }
+static void _libhook_init() {}
 
-int server_main(int, char **, char **) {
+int server_main(int, char **argv, char **) {
+  swtfb::SDK_BIN = argv[0];
   SwtFB fb;
   uint16_t *shared_mem = ipc::get_shared_buffer();
+
 
   mutex draw_queue_m;
   vector<swtfb_update> updates;
@@ -88,7 +90,7 @@ int __libc_start_main(int (*_main)(int, char **, char **), int argc,
                       void (*fini)(void), void (*rtld_fini)(void),
                       void *stack_end) {
 
-  printf("LIBC START HOOK\n");
+  printf("STARTING RM2FB\n");
 
   typeof(&__libc_start_main) func_main =
       (typeof(&__libc_start_main))dlsym(RTLD_NEXT, "__libc_start_main");

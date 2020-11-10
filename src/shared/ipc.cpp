@@ -7,17 +7,21 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define _FCNTL_H 1
-#include <bits/fcntl.h>
-
-
-
 #include <linux/limits.h>
 
 #include "defines.h"
 #include "now.cpp"
 
 #include "mxcfb.h"
+
+#ifndef O_RDWR
+/* File access modes for `open' and `fcntl'.  */
+#define        O_RDONLY        0        /* Open read-only.  */
+#define        O_WRONLY        1        /* Open write-only.  */
+#define        O_RDWR                2        /* Open read/write.  */
+/* Bits OR'd into the second argument to open.  */
+#define        O_CREAT                0x0200        /* Create file if it doesn't exist.  */
+#endif
 
 namespace swtfb {
 struct swtfb_update {

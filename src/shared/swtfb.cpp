@@ -11,11 +11,13 @@
 
 #include "now.cpp"
 #include "qtdump.cpp"
+#include "signature.cpp"
 
 using namespace std;
 
 namespace swtfb {
 
+string SDK_BIN = "/usr/bin/remarkable-shutdown";
 // todo: make it singleton
 class SwtFB {
   const int maxWidth = 1404;
@@ -23,7 +25,20 @@ class SwtFB {
 
 public:
   SwtFB() {
+    setFunc();
     initQT();
+  }
+
+  void setFunc() {
+    int* addr = (int*) locate_signature(SDK_BIN.c_str(), "|@\x9f\xe5|P\x9f\xe5", 8);
+    if (addr != 0) {
+      f_getInstance = (uint32_t * (*)(void))addr;
+      fprintf(stderr, "ADDR: %x\n", addr);
+    } else {
+      fprintf(stderr, "COULDNT LOCATE SIGNATURE IN %s\n", SDK_BIN.c_str());
+      fprintf(stderr, "PLEASE SEE https://github.com/ddvk/remarkable2-framebuffer/issues/18\n");
+      exit(0);
+    }
   }
 
   void initQT() {
@@ -36,7 +51,6 @@ public:
     app = new QGuiApplication(argc, argv);
     auto ptr = f_getInstance();
     instance = reinterpret_cast<QObject*>(ptr);
-    dump_qtClass(instance);
     img = (QImage *)(ptr + 8);
     // dump_qtClass(instance);
 
@@ -112,13 +126,7 @@ private:
   QGuiApplication *app;
   QImage *img;
 
-  // black magic
-  // fec600ccae7743dd4e5d8046427244c0
-  uint32_t *(*f_getInstance)(void) = (uint32_t * (*)(void))0x21F54;
-  void (*f_sendUpdate)(void *, ...) = (void (*)(void *, ...))0x21A34;
-  //
-  // dbd4e8dfeb8810c88fc9d5a902e65961
-  // uint32_t *(*f_getInstance)(void) = (uint32_t * (*)(void))0x224BC;
-  // void (*f_sendUpdate)(void *, ...) = (void (*)(void *, ...))0x2257C;
+  uint32_t *(*f_getInstance)(void) = (uint32_t * (*)(void))0;
+  void (*f_sendUpdate)(void *, ...) = (void (*)(void *, ...))0;
 };
 } // namespace swtfb
