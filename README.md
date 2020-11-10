@@ -38,6 +38,8 @@ remarkable and run:
 LD_PRELOAD=/path/to/librm2fb_demo.so /usr/bin/remarkable-shutdown
 ```
 
+![demo](./docs/demo.gif)
+
 ### Framebuffer Server
 
 build `src/server/librm2fb_server.so.1.0.0`.  Copy it to your
