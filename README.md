@@ -27,15 +27,6 @@ make
 ```
 
 
-### Demo
-
-build `src/loader/librm2fb_demo.so.1.0.0`.  Copy it to your
-remarkable and run:
-
-```
-LD_PRELOAD=/path/to/librm2fb_demo.so /usr/bin/remarkable-shutdown
-```
-
 ### Framebuffer Server
 
 build `src/server/librm2fb_server.so.1.0.0`.  Copy it to your
@@ -55,6 +46,10 @@ run your app.
 The client intercepts interactions with `/dev/fb0` and forwards them to the
 rm2fb server.
 
+
+## Demo
+
+![demo](./docs/demo.gif)
 
 ## Contributing
 
