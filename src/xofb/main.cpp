@@ -1,4 +1,6 @@
 ﻿//  g++ xofb.cpp -ldl -lrt -shared -fPIC -o xofb.so
+//  LD_PRELOAD=xofb.so xochitl
+//  /dev/shm/xofb now has the framebuffer of xochitl
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
