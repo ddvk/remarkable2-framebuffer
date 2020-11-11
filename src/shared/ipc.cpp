@@ -15,12 +15,8 @@
 #include "mxcfb.h"
 
 #ifndef O_RDWR
-/* File access modes for `open' and `fcntl'.  */
-#define        O_RDONLY        0        /* Open read-only.  */
-#define        O_WRONLY        1        /* Open write-only.  */
-#define        O_RDWR                2        /* Open read/write.  */
-/* Bits OR'd into the second argument to open.  */
-#define        O_CREAT                0x0200        /* Create file if it doesn't exist.  */
+#define _FCNTL_H 1
+#include <bits/fcntl.h>
 #endif
 
 namespace swtfb {
@@ -83,7 +79,7 @@ static uint16_t *get_shared_buffer(string name = "/swtfb.01") {
   int fd = shm_open(name.c_str(), O_RDWR | O_CREAT, 0755);
 
   if (fd == -1 && errno == 13) {
-    fd = shm_open(name.c_str(), O_RDWR, 0755);
+    fd = shm_open(name.c_str(), O_RDWR | O_CREAT, 0755);
   }
 
   if (fd < 3) {
