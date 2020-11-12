@@ -11,22 +11,50 @@
 #include <stdint.h>
 #include <thread>
 
-
 using namespace std;
 using namespace swtfb;
 
 int msg_q_id = 0x2257c;
 ipc::Queue MSGQ(msg_q_id);
 
+const int SIZE = 2;
+
+
+uint16_t *shared_mem;
+
 extern "C" {
+static void (*qImageCtor)(void *that, int x, int y, int f) = 0;
+static void (*qImageCtorWithBuffer)(void *that, uint8_t *, int32_t x, int32_t y,
+                                    int32_t bytes, int format, void (*)(void *),
+                                    void *) = 0;
 static void _libhook_init() __attribute__((constructor));
-static void _libhook_init() {}
+static void _libhook_init() {
+  shared_mem = ipc::get_shared_buffer();
+
+  qImageCtor = (void (*)(void *, int, int, int))dlsym(
+      RTLD_NEXT, "_ZN6QImageC1EiiNS_6FormatE");
+  qImageCtorWithBuffer = (void (*)(
+      void *, uint8_t *, int32_t, int32_t, int32_t, int, void (*)(void *),
+      void *))dlsym(RTLD_NEXT, "_ZN6QImageC1EPhiiiNS_6FormatEPFvPvES2_");
+}
+
+bool FIRST_ALLOC = true;
+void _ZN6QImageC1EiiNS_6FormatE(void *that, int x, int y, int f) {
+
+  if (x == WIDTH && y == HEIGHT && FIRST_ALLOC) {
+    fprintf(stderr, "REPLACING THE IMAGE with /dev/shm/xofb \n");
+
+    FIRST_ALLOC = false;
+    qImageCtorWithBuffer(that, (uint8_t *)shared_mem, WIDTH, HEIGHT, WIDTH * SIZE, f,
+                         nullptr, nullptr);
+    return;
+  }
+  qImageCtor(that, x, y, f);
+}
 
 int server_main(int, char **argv, char **) {
   swtfb::SDK_BIN = argv[0];
   SwtFB fb;
-  uint16_t *shared_mem = ipc::get_shared_buffer();
-
 
   mutex draw_queue_m;
   vector<swtfb_update> updates;
@@ -37,17 +65,17 @@ int server_main(int, char **argv, char **) {
       swtfb::reset_dirty(dirty_area);
 
       draw_queue_m.lock();
-			auto todo = updates;
+      auto todo = updates;
       updates.clear();
       draw_queue_m.unlock();
 
       for (auto s : todo) {
         auto mxcfb_update = s.update;
         auto rect = mxcfb_update.update_region;
-        #ifdef DEBUG_DIRTY
-				std::cerr << "Dirty Region: " << rect.left << " " << rect.top << " "
-						 << rect.width << " " << rect.height << endl;
-        #endif
+#ifdef DEBUG_DIRTY
+        std::cerr << "Dirty Region: " << rect.left << " " << rect.top << " "
+                  << rect.width << " " << rect.height << endl;
+#endif
 
         int mode = mxcfb_update.waveform_mode;
 
@@ -59,19 +87,17 @@ int server_main(int, char **argv, char **) {
           mode = 2;
         }
 
-				int size = rect.width * rect.height;
+        int size = rect.width * rect.height;
         fb.DrawRaw(shared_mem, rect.left, rect.top, rect.width, rect.height,
-            mode, 0);
+                   mode, 0);
 
 #ifdef DEBUG_TIMING
-        cerr << get_now() - s.ms << "ms E2E " << rect.width << " " << rect.height << endl;
+        cerr << get_now() - s.ms << "ms E2E " << rect.width << " "
+             << rect.height << endl;
 #endif
-
       }
       usleep(1000);
-
     }
-
   });
 
   printf("WAITING FOR SEND UPDATE ON MSG Q\n");

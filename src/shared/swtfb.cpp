@@ -82,15 +82,17 @@ public:
       QRect rect(100, i, 200, 100);
       img->setPixel(100, i, 0xFF);
       printf(".");
-      sendUpdate(instance, rect, 1, 0);
+      SendUpdate(rect, 1, 4, 0);
     }
   }
-  void FullScreen() {
+  void FullScreen(int color) {
     QRect rect(0, 0, maxWidth, maxHeight);
+    //img->fill(color);
     QPainter painter(img);
     painter.drawText(rect, 132, "Blah");
     painter.end();
-    sendUpdate(instance, rect, 3, 3);
+    SendUpdate(rect, 3,33,10);
+
   }
 
   void DrawText(int i, char *text, bool wait=false) {
@@ -102,15 +104,15 @@ public:
   }
 
   void DrawRaw(uint16_t *buffer, int x, int y, int w, int h, int mode = 2, int async=0) {
-    uint16_t *dest = (uint16_t *)img->bits();
+    /* uint16_t *dest = (uint16_t *)img->bits(); */
 
     int stride = maxWidth;
     int x0 = x, y0 = y, x1 = x0 + w, y1 = y0 + h;
 
-    for (int i = y0; i < y1; i++) {
-      memcpy(&dest[i * stride + x0], &buffer[i * stride + x0],
-             (x1 - x0) * sizeof(uint16_t));
-    }
+    /* for (int i = y0; i < y1; i++) { */
+    /*   memcpy(&dest[i * stride + x0], &buffer[i * stride + x0], */
+    /*          (x1 - x0) * sizeof(uint16_t)); */
+    /* } */
 
     QRect rect(x, y, w, h);
     ClockWatch cz;
