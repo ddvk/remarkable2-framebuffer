@@ -52,7 +52,7 @@ public:
     auto ptr = f_getInstance();
     instance = reinterpret_cast<QObject*>(ptr);
     img = (QImage *)(ptr + 8);
-    // dump_qtClass(instance);
+    dump_qtClass(instance);
 
 
 
@@ -60,7 +60,6 @@ public:
   }
 
   void clearScreen() {
-    QObject *object = static_cast<QObject *>((QObject*) instance);
     QMetaObject::invokeMethod(instance,"clearScreen", Qt::DirectConnection);
   }
 
@@ -68,39 +67,49 @@ public:
     SendUpdate(rect, waveform, flags, sync);
   }
 
-  void SendUpdate(const QRect &rect, int waveform, int flags, bool sync) {
+  void ClearGhosting() {
+      QMetaObject::invokeMethod(instance,"setForceFull", Qt::DirectConnection, Q_ARG(bool,false));
+  }
+
+  void SendUpdate(const QRect &rect, int waveform, int flags, bool sync = false) {
       QGenericArgument argWaveform("EPFramebuffer::WaveformMode",&waveform);
-      QGenericArgument argUpdateMode("EPFramebuffer::UpdateMode",&flags);
-      QMetaObject::invokeMethod(instance,"sendUpdate", Qt::DirectConnection, Q_ARG(QRect, rect), argWaveform, argUpdateMode, Q_ARG(bool, sync));
+      QGenericArgument argUpdateMode("EPFramebuffer::UpdateFlags",&flags);
+      //QMetaObject::invokeMethod(instance,"sendUpdate", Qt::DirectConnection, Q_ARG(QRect, rect), argWaveform, argUpdateMode, Q_ARG(bool, sync));
+      QMetaObject::invokeMethod(instance,"sendUpdate", Qt::DirectConnection, Q_ARG(QRect, rect), argWaveform, argUpdateMode);
+      //QMetaObject::invokeMethod(instance,"sendUpdate", Qt::DirectConnection, Q_ARG(QRect, rect), argWaveform);
   }
 
 
   void DrawLine() {
     cout << "drawing a line " << endl;
     cout << "send update" << endl;
-    for (int i = 100; i < maxHeight; i++) {
-      QRect rect(100, i, 200, 100);
-      img->setPixel(100, i, 0xFF);
-      printf(".");
-      SendUpdate(rect, 1, 4, 0);
+    for (int i = 1; i < maxWidth-4; i+=2) {
+        for (int j = 1; j < maxHeight-2; j++) {
+          QRect rect(i, j, 3, 3);
+          img->setPixel(i+1, j+1, 0xFF);
+          SendUpdate(rect, 1,4, 0);// 1,4 fast
+        }
     }
   }
   void FullScreen(int color) {
+
+    //ClearGhosting();
+    //clearScreen();
     QRect rect(0, 0, maxWidth, maxHeight);
-    //img->fill(color);
+    img->fill(color);
     QPainter painter(img);
     painter.drawText(rect, 132, "Blah");
     painter.end();
-    SendUpdate(rect, 3,33,10);
+    SendUpdate(rect, 2,3,0); //2,3 refresh
 
   }
 
-  void DrawText(int i, char *text, bool wait=false) {
+  void DrawText(int i, char *text) {
     QRect rect(0, i, 200, 100);
     QPainter painter(img);
     painter.drawText(rect, 132, text);
     painter.end();
-    sendUpdate(instance, rect, 3, wait ? 0 : 1);
+    SendUpdate(rect, 3, 0, 0);
   }
 
   void DrawRaw(uint16_t *buffer, int x, int y, int w, int h, int mode = 2, int async=0) {
