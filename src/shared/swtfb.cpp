@@ -55,7 +55,9 @@ public:
     auto ptr = f_getInstance();
     instance = reinterpret_cast<QObject *>(ptr);
     img = (QImage *)(ptr + 8);
+#ifdef DEBUG
     dump_qtClass(instance);
+#endif
 
     cout << img->width() << " " << img->height() << " " << img->depth() << endl;
   }
@@ -107,7 +109,7 @@ public:
     SendUpdate(rect, 3, 0);
   }
 
-  void DrawRaw(uint16_t *buffer, int x, int y, int w, int h, int waveform = 2,
+  void DrawRaw(int x, int y, int w, int h, int waveform = 2,
                int flags = 3) const {
     QRect rect(x, y, w, h);
     ClockWatch cz;

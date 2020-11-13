@@ -22,7 +22,9 @@ const int SIZE = 2;
 uint16_t *shared_mem;
 
 extern "C" {
+// QImage(width, height, format)
 static void (*qImageCtor)(void *that, int x, int y, int f) = 0;
+// QImage(uchar*, width, height, bytesperline, format)
 static void (*qImageCtorWithBuffer)(void *that, uint8_t *, int32_t x, int32_t y,
                                     int32_t bytes, int format, void (*)(void *),
                                     void *) = 0;
@@ -73,20 +75,21 @@ void doUpdate(const SwtFB &fb, const swtfb_update &s) {
   auto flags = 0;
 
   if (waveform == 1 && update_mode == 0) {
+    // fast draw
     flags = 4;
-  } else if (update_mode == 1) {
+  } else if (update_mode == 1 && waveform == 2) {
+    // blink
     flags = 3;
   }
-
-  cout << "doUpdate ";
-  cout << "mxc: waveform_mode " << mxcfb_update.waveform_mode << endl;
-  cout << "mxc: update mode " << mxcfb_update.update_mode << endl;
-  cout << "mxc: update marker " << mxcfb_update.update_marker << endl;
-  cout << endl;
-  cout << "waveform " << waveform;
-  cout << " flags " << flags << endl;
-  fb.DrawRaw(shared_mem, rect.left, rect.top, rect.width, rect.height, waveform,
-             flags);
+#ifdef DEBUG
+  cerr << "doUpdate " << endl;
+  cerr << "mxc: waveform_mode " << mxcfb_update.waveform_mode << endl;
+  cerr << "mxc: update mode " << mxcfb_update.update_mode << endl;
+  cerr << "mxc: update marker " << mxcfb_update.update_marker << endl;
+  cerr << "final: waveform " << waveform;
+  cerr << " flags " << flags << endl << endl;
+#endif
+  fb.DrawRaw(rect.left, rect.top, rect.width, rect.height, waveform, flags);
 
 #ifdef DEBUG_TIMING
   cerr << get_now() -.ms << "ms E2E " << rect.width << " " << rect.height
@@ -97,38 +100,12 @@ void doUpdate(const SwtFB &fb, const swtfb_update &s) {
 int server_main(int, char **argv, char **) {
   swtfb::SDK_BIN = argv[0];
   SwtFB fb;
-  fb.ClearScreen();
-
-  mutex draw_queue_m;
-  vector<swtfb_update> updates;
-
-  auto th = new thread([&]() {
-    while (true) {
-      mxcfb_rect dirty_area;
-      swtfb::reset_dirty(dirty_area);
-
-      draw_queue_m.lock();
-      auto todo = updates;
-      updates.clear();
-      draw_queue_m.unlock();
-
-      for (auto s : todo) {
-        doUpdate(fb, s);
-      }
-      usleep(1000);
-    }
-  });
 
   printf("WAITING FOR SEND UPDATE ON MSG Q\n");
   while (true) {
     swtfb_update buf = MSGQ.recv();
     doUpdate(fb, buf);
-
-    /* draw_queue_m.lock(); */
-    /* updates.push_back(buf); */
-    /* draw_queue_m.unlock(); */
   }
-  th->join();
 }
 
 int __libc_start_main(int (*_main)(int, char **, char **), int argc,
