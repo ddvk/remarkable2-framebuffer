@@ -55,6 +55,7 @@ void _ZN6QImageC1EiiNS_6FormatE(void *that, int x, int y, int f) {
 int server_main(int, char **argv, char **) {
   swtfb::SDK_BIN = argv[0];
   SwtFB fb;
+  fb.ClearScreen();
 
   mutex draw_queue_m;
   vector<swtfb_update> updates;

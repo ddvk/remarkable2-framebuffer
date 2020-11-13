@@ -59,7 +59,7 @@ public:
     cout << img->width() << " " << img->height() << " " << img->depth() << endl;
   }
 
-  void clearScreen() {
+  void ClearScreen() {
     QMetaObject::invokeMethod(instance,"clearScreen", Qt::DirectConnection);
   }
 
@@ -125,7 +125,7 @@ public:
 
     QRect rect(x, y, w, h);
     ClockWatch cz;
-    sendUpdate(instance, rect, mode, 0, 0);
+    SendUpdate(rect, 1, 4 );
 
     #ifdef DEBUG
     cerr << get_now() << " Total Update took " << cz.elapsed() << "s" << endl;
