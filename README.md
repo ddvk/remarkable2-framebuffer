@@ -46,11 +46,6 @@ run your app.
 The client intercepts interactions with `/dev/fb0` and forwards them to the
 rm2fb server.
 
-
-## Demo
-
-![demo](./docs/demo.gif)
-
 ## Contributing
 
 Please look at the open github issues and add a new one for any work you are planning
@@ -60,9 +55,7 @@ Things that can use help:
 
 * writing documentation
 * setting up this repository build system and CI
-* achieving fast refresh latency
 * understanding the waveforms used by SWTCON
-* making a general way of finding the fb memory in xochitl and exposing it as shared mem
 * writing our own implementation of SWTCON
 
 ## FAQ
