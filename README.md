@@ -46,6 +46,9 @@ run your app.
 The client intercepts interactions with `/dev/fb0` and forwards them to the
 rm2fb server.
 
+## [Demo](https://imgur.com/gallery/zGMn7Qs)
+
+
 ## Contributing
 
 Please look at the open github issues and add a new one for any work you are planning
