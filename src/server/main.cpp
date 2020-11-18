@@ -89,6 +89,9 @@ void doUpdate(const SwtFB &fb, const swtfb_update &s) {
   cerr << "final: waveform " << waveform;
   cerr << " flags " << flags << endl << endl;
 #endif
+  if (mxcfb_update.update_marker > 0) {
+    fb.WaitForLastUpdate();
+  }
   fb.DrawRaw(rect.left, rect.top, rect.width, rect.height, waveform, flags);
 
 #ifdef DEBUG_TIMING

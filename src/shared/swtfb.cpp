@@ -77,6 +77,9 @@ public:
     QMetaObject::invokeMethod(instance, "sendUpdate", Qt::DirectConnection,
                               Q_ARG(QRect, rect), argWaveform, argUpdateMode);
   }
+  void WaitForLastUpdate() const {
+    QMetaObject::invokeMethod(instance, "waitForLastUpdate", Qt::DirectConnection);
+  }
 
   void DrawLine() {
     cout << "drawing a line " << endl;
