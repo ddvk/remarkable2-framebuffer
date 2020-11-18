@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-
-LD_PRELOAD=${DIR}/server.so `which remarkable-shutdown` &
+systemctl stop xochitl
+LD_PRELOAD=${DIR}/librm2fb_server.so.1.0.0 `which remarkable-shutdown` &
 pid=$!
 sleep 2
-LD_PRELOAD=${DIR}/client.so $*
-kill ${pid}
+LD_PRELOAD=${DIR}/librm2fb_client.so.1.0.0 $*
+pid2=$!
+wait $pid2
+kill -9 -${pid}
+kill -9 -${pid2}
+systemctl start xochitl
