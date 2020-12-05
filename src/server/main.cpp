@@ -11,6 +11,11 @@
 #include <stdint.h>
 #include <thread>
 
+#include <QCoreApplication>
+#include <QTouchEvent>
+
+#include <sys/poll.h>
+
 using namespace std;
 using namespace swtfb;
 
@@ -21,37 +26,9 @@ const int SIZE = 2;
 
 uint16_t *shared_mem;
 
-extern "C" {
-// QImage(width, height, format)
-static void (*qImageCtor)(void *that, int x, int y, int f) = 0;
-// QImage(uchar*, width, height, bytesperline, format)
-static void (*qImageCtorWithBuffer)(void *that, uint8_t *, int32_t x, int32_t y,
-                                    int32_t bytes, int format, void (*)(void *),
-                                    void *) = 0;
-static void _libhook_init() __attribute__((constructor));
-static void _libhook_init() {
-  shared_mem = ipc::get_shared_buffer();
+char backup[ipc::BUF_SIZE];
 
-  qImageCtor = (void (*)(void *, int, int, int))dlsym(
-      RTLD_NEXT, "_ZN6QImageC1EiiNS_6FormatE");
-  qImageCtorWithBuffer = (void (*)(
-      void *, uint8_t *, int32_t, int32_t, int32_t, int, void (*)(void *),
-      void *))dlsym(RTLD_NEXT, "_ZN6QImageC1EPhiiiNS_6FormatEPFvPvES2_");
-}
-
-bool FIRST_ALLOC = true;
-void _ZN6QImageC1EiiNS_6FormatE(void *that, int x, int y, int f) {
-
-  if (x == WIDTH && y == HEIGHT && FIRST_ALLOC) {
-    fprintf(stderr, "REPLACING THE IMAGE with /dev/shm/xofb \n");
-
-    FIRST_ALLOC = false;
-    qImageCtorWithBuffer(that, (uint8_t *)shared_mem, WIDTH, HEIGHT,
-                         WIDTH * SIZE, f, nullptr, nullptr);
-    return;
-  }
-  qImageCtor(that, x, y, f);
-}
+static bool ENABLED = false;
 
 void doUpdate(const SwtFB &fb, const swtfb_update &s) {
   auto mxcfb_update = s.update;
@@ -100,14 +77,154 @@ void doUpdate(const SwtFB &fb, const swtfb_update &s) {
 #endif
 }
 
+class TestFilter : public QObject {
+  Q_OBJECT;
+
+public:
+  TestFilter() : QObject(nullptr) {}
+
+  static void updateLoop() {
+    static SwtFB fb;
+
+    // Backup the screen
+    memcpy(backup, shared_mem, ipc::BUF_SIZE);
+    // TODO: what is needed here?
+    fb.ClearScreen();
+    // fb.ClearGhosting();
+
+    std::thread updateThread([&fb]() {
+      system("LD_PRELOAD=/home/root/librm2fb_client.so.1.0.0 /home/root/draft");
+
+      MSGQ.send({}, /* stop */ true);
+      fprintf(stderr, "Process stopped\n");
+    });
+
+    while (true) {
+      auto buf = MSGQ.recv();
+      if (buf.mtype == ipc::STOP_t) {
+        break;
+      }
+      fprintf(stderr, "Got msg %d\n", buf.update.waveform_mode);
+
+      doUpdate(fb, buf);
+    }
+
+    fprintf(stderr, "joining");
+    updateThread.join();
+
+    fprintf(stderr, "stopped, restoring screen\n");
+
+    fb.ClearScreen();
+    memcpy(shared_mem, backup, ipc::BUF_SIZE);
+    fb.DrawRaw(0, 0, ipc::maxWidth, ipc::maxHeight, 3, 3);
+    fprintf(stderr, "Done!\n");
+  }
+
+  bool eventFilter(QObject *object, QEvent *event) override {
+    auto type = event->type();
+    if (type == QEvent::TouchBegin) {
+      auto *touchEv = static_cast<QTouchEvent *>(event);
+      auto points = touchEv->touchPoints().size();
+      fprintf(stderr, "Got touch BEGIN: %d\n", points);
+      if (points == 2) {
+
+        updateLoop();
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+private:
+};
+
+extern "C" {
+// QImage(width, height, format)
+static void (*qImageCtor)(void *that, int x, int y, int f) = 0;
+// QImage(uchar*, width, height, bytesperline, format)
+static void (*qImageCtorWithBuffer)(void *that, uint8_t *, int32_t x, int32_t y,
+                                    int32_t bytes, int format, void (*)(void *),
+                                    void *) = 0;
+
+static int (*safe_poll)(struct pollfd *fds, nfds_t nfds,
+                        const struct timespec *timeout_ts) = 0;
+
+static int (*qcoreAppExec)();
+
+static void _libhook_init() __attribute__((constructor));
+static void _libhook_init() {
+  shared_mem = ipc::get_shared_buffer();
+
+  qImageCtor = (void (*)(void *, int, int, int))dlsym(
+      RTLD_NEXT, "_ZN6QImageC1EiiNS_6FormatE");
+  qImageCtorWithBuffer = (void (*)(
+      void *, uint8_t *, int32_t, int32_t, int32_t, int, void (*)(void *),
+      void *))dlsym(RTLD_NEXT, "_ZN6QImageC1EPhiiiNS_6FormatEPFvPvES2_");
+
+  safe_poll = (int (*)(struct pollfd * fds, nfds_t nfds,
+                       const struct timespec *timeout_ts))
+      dlsym(RTLD_NEXT, "_Z12qt_safe_pollP6pollfdmPK8timespec");
+
+  qcoreAppExec =
+      (typeof(qcoreAppExec))dlsym(RTLD_NEXT, "_ZN15QGuiApplication4execEv");
+  fprintf(stderr, "Got methods: %x\n", qcoreAppExec);
+}
+
+bool FIRST_ALLOC = true;
+void _ZN6QImageC1EiiNS_6FormatE(void *that, int x, int y, int f) {
+  if (ENABLED && x == WIDTH && y == HEIGHT && FIRST_ALLOC) {
+    fprintf(stderr, "REPLACING THE IMAGE with /dev/shm/xofb \n");
+
+    FIRST_ALLOC = false;
+    qImageCtorWithBuffer(that, (uint8_t *)shared_mem, WIDTH, HEIGHT,
+                         WIDTH * SIZE, f, nullptr, nullptr);
+    return;
+  }
+  qImageCtor(that, x, y, f);
+}
+
+static int i = 0;
+
+// int _Z12qt_safe_pollP6pollfdmPK8timespec(struct pollfd *fds, nfds_t nfds,
+//                                          const struct timespec *timeout_ts) {
+//   if (ENABLED) {
+//     if (i < 10) {
+//       fprintf(stderr, "POLL CALLED %d: %d\n", i, nfds);
+//     }
+//
+//     static SwtFB fb;
+//
+//     swtfb_update buf;
+//     if (MSGQ.poll(&buf)) {
+//       doUpdate(fb, buf);
+//     }
+//
+//     i++;
+//   }
+//
+//   return safe_poll(fds, nfds, timeout_ts);
+//   // return 0;
+// }
+
+int _ZN15QGuiApplication4execEv() {
+  if (ENABLED) {
+    fprintf(stderr, "\nHOOKED APP EXEC!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n");
+
+    auto *app = QCoreApplication::instance();
+    fprintf(stderr, "app instance: %x\n", app);
+
+    TestFilter *filter = new TestFilter();
+    app->installEventFilter(filter);
+  }
+
+  return qcoreAppExec();
+}
+
 int server_main(int, char **argv, char **) {
-  swtfb::SDK_BIN = argv[0];
-  SwtFB fb;
 
   printf("WAITING FOR SEND UPDATE ON MSG Q\n");
   while (true) {
-    swtfb_update buf = MSGQ.recv();
-    doUpdate(fb, buf);
   }
 }
 
@@ -121,6 +238,17 @@ int __libc_start_main(int (*_main)(int, char **, char **), int argc,
   typeof(&__libc_start_main) func_main =
       (typeof(&__libc_start_main))dlsym(RTLD_NEXT, "__libc_start_main");
 
-  return func_main(server_main, argc, argv, init, fini, rtld_fini, stack_end);
+  swtfb::SDK_BIN = argv[0];
+  if (swtfb::SDK_BIN.find("xochitl") != std::string::npos) {
+    ENABLED = true;
+    fprintf(stderr, "Enabled!\n");
+  }
+
+  fprintf(stderr, "BIN FILE: %s\n", argv[0]);
+
+  return func_main(_main /*server_main*/, argc, argv, init, fini, rtld_fini,
+                   stack_end);
 };
 };
+
+#include "main.moc"

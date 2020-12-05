@@ -45,13 +45,13 @@ public:
   }
 
   void initQT() {
-    qputenv("QMLSCENE_DEVICE", "epaper");
-    qputenv("QT_QPA_PLATFORM", "epaper:enable_fonts");
+    // qputenv("QMLSCENE_DEVICE", "epaper");
+    // qputenv("QT_QPA_PLATFORM", "epaper:enable_fonts");
 
-    // needed for qpainter
-    char *argv[0];
-    int argc = 0;
-    app = new QGuiApplication(argc, argv);
+    // // needed for qpainter
+    // char *argv[0];
+    // int argc = 0;
+    // app = new QGuiApplication(argc, argv);
     auto ptr = f_getInstance();
     instance = reinterpret_cast<QObject *>(ptr);
     img = (QImage *)(ptr + 8);
@@ -78,19 +78,21 @@ public:
                               Q_ARG(QRect, rect), argWaveform, argUpdateMode);
   }
   void WaitForLastUpdate() const {
-    QMetaObject::invokeMethod(instance, "waitForLastUpdate", Qt::DirectConnection);
+    QMetaObject::invokeMethod(instance, "waitForLastUpdate",
+                              Qt::DirectConnection);
   }
 
   void DrawLine() {
     cout << "drawing a line " << endl;
     cout << "send update" << endl;
-    for (int i = 1; i < maxWidth - 4; i += 2) {
-      for (int j = 1; j < maxHeight - 2; j++) {
-        QRect rect(i, j, 3, 3);
-        img->setPixel(i + 1, j + 1, 0xFF);
-        SendUpdate(rect, 1, 4); // 1,4 fast
-      }
+    // for (int i = 1; i < maxWidth - 4; i += 2) {
+    int i = maxWidth / 2;
+    for (int j = 1; j < maxHeight - 2; j++) {
+      QRect rect(i, j, 3, 3);
+      img->setPixel(i + 1, j + 1, 0xFF);
+      SendUpdate(rect, 1, 4); // 1,4 fast
     }
+    //}
   }
   void FullScreen(int color) {
 

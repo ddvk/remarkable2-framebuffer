@@ -23,9 +23,9 @@ namespace swtfb {
 struct swtfb_update {
   long mtype;
   struct mxcfb_update_data update;
-  #ifdef DEBUG_TIMING
+#ifdef DEBUG_TIMING
   uint64_t ms;
-  #endif
+#endif
 };
 
 const int WIDTH = 1404;
@@ -61,13 +61,12 @@ inline void mark_dirty(mxcfb_rect &dirty_area, mxcfb_rect &rect) {
 namespace ipc {
 
 using namespace std;
-enum MSG_TYPE { INIT_t = 1, UPDATE_t };
-
+enum MSG_TYPE { INIT_t = 1, UPDATE_t, STOP_t };
 
 const int maxWidth = 1404;
 const int maxHeight = 1872;
-int BUF_SIZE = maxWidth * maxHeight *
-               sizeof(uint16_t); // hardcoded size of display mem for rM2
+const int BUF_SIZE = maxWidth * maxHeight *
+                     sizeof(uint16_t); // hardcoded size of display mem for rM2
 int SWTFB_FD = 0;
 
 // TODO: allow multiple shared buffers in one process?
@@ -91,9 +90,9 @@ static uint16_t *get_shared_buffer(string name = "/swtfb.01") {
   uint16_t *mem =
       (uint16_t *)mmap(NULL, BUF_SIZE, PROT_WRITE, MAP_SHARED, fd, 0);
 
-
   if (getenv("RM2FB_NESTED") == NULL) {
-    fprintf(stderr, "OPENED SHARED MEM: /dev/shm%s at %x, errno: %i\n", name.c_str(), mem, errno);
+    fprintf(stderr, "OPENED SHARED MEM: /dev/shm%s at %x, errno: %i\n",
+            name.c_str(), mem, errno);
   }
   return mem;
 }
@@ -108,21 +107,21 @@ public:
 
   Queue(int id) : id(id) { init(); }
 
-  void send(mxcfb_update_data msg) {
-    // TODO: read return value
-    #ifdef DEBUG
+  void send(mxcfb_update_data msg, bool stop = false) {
+// TODO: read return value
+#ifdef DEBUG
     auto rect = msg.update_region;
     cerr << get_now() << " MSG Q SEND " << rect.left << " " << rect.top << " "
          << rect.width << " " << rect.height << endl;
-    #endif
+#endif
 
     swtfb_update swtfb_msg;
-    swtfb_msg.mtype = 1;
+    swtfb_msg.mtype = stop ? STOP_t : UPDATE_t;
     swtfb_msg.update = msg;
 
-    #ifdef DEBUG_TIMING
+#ifdef DEBUG_TIMING
     swtfb_msg.ms = get_now();
-    #endif
+#endif
     int wrote = msgsnd(msqid, (void *)&swtfb_msg, sizeof(swtfb_msg), 0);
     if (wrote != 0) {
       cerr << "ERRNO " << errno << endl;
@@ -132,11 +131,11 @@ public:
   swtfb_update recv() {
     swtfb_update buf;
     auto len = msgrcv(msqid, &buf, sizeof(buf), 0, 0);
-    #ifdef DEBUG_TIMING
+#ifdef DEBUG_TIMING
     auto rect = buf.update.update_region;
-    cerr << get_now()  - buf.ms << "ms MSG Q RECV " << rect.left << " " << rect.top << " "
-         << rect.width << " " << rect.height << endl;
-    #endif
+    cerr << get_now() - buf.ms << "ms MSG Q RECV " << rect.left << " "
+         << rect.top << " " << rect.width << " " << rect.height << endl;
+#endif
     if (len >= 0) {
       return buf;
     } else {
