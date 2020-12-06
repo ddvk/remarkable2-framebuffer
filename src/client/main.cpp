@@ -10,6 +10,8 @@
 #include <string>
 #include <unistd.h>
 
+#include <QByteArray>
+
 #include "../shared/ipc.cpp"
 
 #define FB_ID "mxcfb"
@@ -131,6 +133,19 @@ int ioctl(int fd, unsigned long request, char *ptr) {
   }
 
   return func_ioctl(fd, request, ptr);
+}
+
+static const auto touchArgs = QByteArray("rotate=180:invertx");
+
+bool _Z7qputenvPKcRK10QByteArray(const char *name, const QByteArray &val) {
+  auto orig_fn = (bool (*)(const char *, const QByteArray &))dlsym(
+      RTLD_NEXT, "_Z7qputenvPKcRK10QByteArray");
+
+  if (strcmp(name, "QT_QPA_EVDEV_TOUCHSCREEN_PARAMETERS") == 0) {
+    return orig_fn(name, touchArgs);
+  }
+
+  return orig_fn(name, val);
 }
 
 int __libc_start_main(int (*_main)(int, char **, char **), int argc,

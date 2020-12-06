@@ -17,6 +17,7 @@
 #ifndef O_RDWR
 #define _FCNTL_H 1
 #include <bits/fcntl.h>
+#undef _FCNTL_H
 #endif
 
 namespace swtfb {

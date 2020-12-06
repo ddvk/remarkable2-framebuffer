@@ -1,5 +1,12 @@
-﻿#include "../shared/ipc.cpp"
+﻿
+#include <fcntl.h>
+
+#include "../shared/ipc.cpp"
 #include "../shared/swtfb.cpp"
+
+#include <linux/input.h>
+#include <sys/poll.h>
+#include <unistd.h>
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -14,9 +21,7 @@
 #include <QCoreApplication>
 #include <QTouchEvent>
 
-#include <sys/poll.h>
-
-using namespace std;
+// using namespace std;
 using namespace swtfb;
 
 int msg_q_id = 0x2257c;
@@ -58,16 +63,16 @@ void doUpdate(const SwtFB &fb, const swtfb_update &s) {
   // correctly handle the corresponding ioctl (empty rect and flags == 2?).
   if (waveform == /*init*/ 0 && update_mode == /* full */ 1) {
     flags |= 2;
-    cerr << "SERVER: sync" << std::endl;
+    std::cerr << "SERVER: sync" << std::endl;
   } else if (rect.left == 0 && rect.top > 1800 &&
              waveform == /* grayscale */ 3 && update_mode == /* full */ 1) {
-    cerr << "server sync, x2: " << rect.width << " y2: " << rect.height
-         << std::endl;
+    std::cerr << "server sync, x2: " << rect.width << " y2: " << rect.height
+              << std::endl;
     flags |= 2;
   }
 
 #ifdef DEBUG
-  cerr << "doUpdate " << endl;
+  std::cerr << "doUpdate " << endl;
   cerr << "mxc: waveform_mode " << mxcfb_update.waveform_mode << endl;
   cerr << "mxc: update mode " << mxcfb_update.update_mode << endl;
   cerr << "mxc: update marker " << mxcfb_update.update_marker << endl;
@@ -98,7 +103,7 @@ public:
     fb.ClearScreen();
     // fb.ClearGhosting();
 
-    std::thread updateThread([&fb]() {
+    std::thread updateThread([]() {
       system("LD_PRELOAD=/home/root/librm2fb_client.so.1.0.0 /home/root/draft");
 
       MSGQ.send({}, /* stop */ true);
@@ -119,10 +124,11 @@ public:
 
     fprintf(stderr, "stopped, restoring screen\n");
 
-    fb.ClearScreen();
+    // fb.ClearScreen();
     memcpy(shared_mem, backup, ipc::BUF_SIZE);
-    fb.DrawRaw(0, 0, ipc::maxWidth, ipc::maxHeight, 3, 3);
-    endTime = time(nullptr);
+    fb.DrawRaw(0, 0, ipc::maxWidth, ipc::maxHeight, /* grayscale TODO: hq? */ 3,
+               /* sync and full */ 3);
+
     fprintf(stderr, "Done!\n");
   }
 
@@ -142,10 +148,7 @@ public:
   }
 
 private:
-  static ulong endTime;
 };
-
-ulong TestFilter::endTime = 0;
 
 extern "C" {
 // QImage(width, height, format)
