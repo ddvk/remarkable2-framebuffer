@@ -53,10 +53,18 @@ void doUpdate(const SwtFB &fb, const swtfb_update &s) {
   auto flags = update_mode & 0x1;
 
   // TODO: Get sync from client (wait for second ioctl? or look at stack?)
+  // There are only two occasions when the original rm1 library sets sync to
+  // true. Currently we detect them by the other data. Ideally we should
+  // correctly handle the corresponding ioctl (empty rect and flags == 2?).
   if (waveform == /*init*/ 0 && update_mode == /* full */ 1) {
     flags |= 2;
     cerr << "SERVER: sync" << std::endl;
-  } // TODO: Flush full framebuffer not handled
+  } else if (rect.left == 0 && rect.top > 1800 &&
+             waveform == /* grayscale */ 3 && update_mode == /* full */ 1) {
+    cerr << "server sync, x2: " << rect.width << " y2: " << rect.height
+         << std::endl;
+    flags |= 2;
+  }
 
 #ifdef DEBUG
   cerr << "doUpdate " << endl;
