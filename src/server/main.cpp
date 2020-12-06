@@ -33,31 +33,31 @@ static bool ENABLED = false;
 void doUpdate(const SwtFB &fb, const swtfb_update &s) {
   auto mxcfb_update = s.update;
   auto rect = mxcfb_update.update_region;
+
 #ifdef DEBUG_DIRTY
   std::cerr << "Dirty Region: " << rect.left << " " << rect.top << " "
             << rect.width << " " << rect.height << endl;
 #endif
 
+  // For now, we are using two waveform modes:
+  // 0: init (same as GL16)
+  // 1: DU - direct update, fast
+  // 2: GC16 - high fidelity (slow)
+  // 3: GL16 - what the rm is using
+  // 8: highlight (same as high fidelity)
+
   int waveform = mxcfb_update.waveform_mode;
   // full = 1, partial = 0
   auto update_mode = mxcfb_update.update_mode;
 
-  // For now, we are using two waveform modes:
-  // 1: DU - direct update, fast
-  // 2: GC16 - high fidelity (slow)
-  // 3: GL16 - what the rm is using
-  if (waveform > 3) {
-    waveform = 3;
-  }
-  auto flags = 0;
+  auto flags = update_mode & 0x1;
 
-  if (waveform == 1 && update_mode == 0) {
-    // fast draw
-    flags = 4;
-  } else if (update_mode == 1 && waveform == 2) {
-    // blink
-    flags = 3;
-  }
+  // TODO: Get sync from client (wait for second ioctl? or look at stack?)
+  if (waveform == /*init*/ 0 && update_mode == /* full */ 1) {
+    flags |= 2;
+    cerr << "SERVER: sync" << std::endl;
+  } // TODO: Flush full framebuffer not handled
+
 #ifdef DEBUG
   cerr << "doUpdate " << endl;
   cerr << "mxc: waveform_mode " << mxcfb_update.waveform_mode << endl;
@@ -66,9 +66,7 @@ void doUpdate(const SwtFB &fb, const swtfb_update &s) {
   cerr << "final: waveform " << waveform;
   cerr << " flags " << flags << endl << endl;
 #endif
-  if (mxcfb_update.update_marker > 0) {
-    fb.WaitForLastUpdate();
-  }
+
   fb.DrawRaw(rect.left, rect.top, rect.width, rect.height, waveform, flags);
 
 #ifdef DEBUG_TIMING
@@ -104,7 +102,6 @@ public:
       if (buf.mtype == ipc::STOP_t) {
         break;
       }
-      fprintf(stderr, "Got msg %d\n", buf.update.waveform_mode);
 
       doUpdate(fb, buf);
     }
@@ -117,6 +114,7 @@ public:
     fb.ClearScreen();
     memcpy(shared_mem, backup, ipc::BUF_SIZE);
     fb.DrawRaw(0, 0, ipc::maxWidth, ipc::maxHeight, 3, 3);
+    endTime = time(nullptr);
     fprintf(stderr, "Done!\n");
   }
 
@@ -125,9 +123,8 @@ public:
     if (type == QEvent::TouchBegin) {
       auto *touchEv = static_cast<QTouchEvent *>(event);
       auto points = touchEv->touchPoints().size();
-      fprintf(stderr, "Got touch BEGIN: %d\n", points);
-      if (points == 2) {
 
+      if (points == 2) {
         updateLoop();
         return true;
       }
@@ -137,7 +134,10 @@ public:
   }
 
 private:
+  static ulong endTime;
 };
+
+ulong TestFilter::endTime = 0;
 
 extern "C" {
 // QImage(width, height, format)

@@ -130,6 +130,7 @@ public:
 
   swtfb_update recv() {
     swtfb_update buf;
+    errno = 0;
     auto len = msgrcv(msqid, &buf, sizeof(buf), 0, 0);
 #ifdef DEBUG_TIMING
     auto rect = buf.update.update_region;
@@ -139,7 +140,7 @@ public:
     if (len >= 0) {
       return buf;
     } else {
-      cerr << "ERR " << len << " " << errno << endl;
+      perror("Error recv msgbuf");
     }
 
     return {};

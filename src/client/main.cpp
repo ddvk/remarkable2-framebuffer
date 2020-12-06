@@ -92,7 +92,7 @@ int ioctl(int fd, unsigned long request, char *ptr) {
 
         return 0;
       } else if (request == MXCFB_WAIT_FOR_UPDATE_COMPLETE) {
-
+        std::cerr << "CLIENT: sync" << std::endl;
         return 0;
       }
 

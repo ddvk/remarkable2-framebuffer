@@ -55,9 +55,9 @@ public:
     auto ptr = f_getInstance();
     instance = reinterpret_cast<QObject *>(ptr);
     img = (QImage *)(ptr + 8);
-#ifdef DEBUG
+    // #ifdef DEBUG
     dump_qtClass(instance);
-#endif
+    // #endif
 
     cout << img->width() << " " << img->height() << " " << img->depth() << endl;
   }
@@ -72,12 +72,14 @@ public:
   }
 
   void SendUpdate(const QRect &rect, int waveform, int flags) const {
+    // Method idx == 1
     QGenericArgument argWaveform("EPFramebuffer::WaveformMode", &waveform);
     QGenericArgument argUpdateMode("EPFramebuffer::UpdateFlags", &flags);
     QMetaObject::invokeMethod(instance, "sendUpdate", Qt::DirectConnection,
                               Q_ARG(QRect, rect), argWaveform, argUpdateMode);
   }
   void WaitForLastUpdate() const {
+    // TODO: method Idx == 5, just returns.
     QMetaObject::invokeMethod(instance, "waitForLastUpdate",
                               Qt::DirectConnection);
   }
