@@ -13,6 +13,9 @@
 #include <QByteArray>
 
 #include "../shared/ipc.cpp"
+#include "../shared/signature.cpp"
+
+#include "frida/frida-gum.h"
 
 #define FB_ID "mxcfb"
 
@@ -20,16 +23,25 @@
 #define _GNU_SOURCE
 #endif
 
-using namespace std;
 int msg_q_id = 0x2257c;
 swtfb::ipc::Queue MSGQ(msg_q_id);
 
 uint16_t *SHARED_BUF;
 
+const int SIZE = 2;
+
 bool IN_XOCHITL = false;
 
 extern "C" {
 struct stat;
+
+// QImage(width, height, format)
+static void (*qImageCtor)(void *that, int x, int y, int f) = 0;
+// QImage(uchar*, width, height, bytesperline, format)
+static void (*qImageCtorWithBuffer)(void *that, uint8_t *, int32_t x, int32_t y,
+                                    int32_t bytes, int format, void (*)(void *),
+                                    void *) = 0;
+
 static void _libhook_init() __attribute__((constructor));
 static void _libhook_init() {
   std::ios_base::Init i;
@@ -43,7 +55,28 @@ static void _libhook_init() {
   } else {
     setenv("RM2FB_ACTIVE", "1", true);
   }
+
+  qImageCtor = (void (*)(void *, int, int, int))dlsym(
+      RTLD_NEXT, "_ZN6QImageC1EiiNS_6FormatE");
+  qImageCtorWithBuffer = (void (*)(
+      void *, uint8_t *, int32_t, int32_t, int32_t, int, void (*)(void *),
+      void *))dlsym(RTLD_NEXT, "_ZN6QImageC1EPhiiiNS_6FormatEPFvPvES2_");
+
   SHARED_BUF = swtfb::ipc::get_shared_buffer();
+}
+
+bool FIRST_ALLOC = true;
+void _ZN6QImageC1EiiNS_6FormatE(void *that, int x, int y, int f) {
+  if (IN_XOCHITL && x == swtfb::WIDTH && y == swtfb::HEIGHT && FIRST_ALLOC) {
+    fprintf(stderr, "REPLACING THE IMAGE with /dev/shm/xofb \n");
+
+    FIRST_ALLOC = false;
+    qImageCtorWithBuffer(that, (uint8_t *)SHARED_BUF, swtfb::WIDTH,
+                         swtfb::HEIGHT, swtfb::WIDTH * SIZE, f, nullptr,
+                         nullptr);
+    return;
+  }
+  qImageCtor(that, x, y, f);
 }
 
 int open64(const char *pathname, int flags, mode_t mode = 0) {
@@ -55,7 +88,7 @@ int open64(const char *pathname, int flags, mode_t mode = 0) {
 
   auto r = func_open(pathname, flags, mode);
   if (not IN_XOCHITL) {
-    if (pathname == string("/dev/fb0")) {
+    if (pathname == std::string("/dev/fb0")) {
       return swtfb::ipc::SWTFB_FD;
     }
   }
@@ -72,7 +105,7 @@ int open(const char *pathname, int flags, mode_t mode = 0) {
 
   auto r = func_open(pathname, flags, mode);
   if (not IN_XOCHITL) {
-    if (pathname == string("/dev/fb0")) {
+    if (pathname == std::string("/dev/fb0")) {
       return swtfb::ipc::SWTFB_FD;
     }
   }
@@ -148,13 +181,109 @@ bool _Z7qputenvPKcRK10QByteArray(const char *name, const QByteArray &val) {
   return orig_fn(name, val);
 }
 
+void (*old_update)(void *, int, int, int, int, int, int) = 0;
+int (*old_create_threads)(const char *, void *) = 0;
+int (*old_wait)(void) = 0;
+int (*old_shutdown)(void) = 0;
+
+void new_update(void *instance, int x1, int y1, int x2, int y2, int waveform,
+                int flags) {
+  std::cerr << "UPDATE HOOK CALLED" << std::endl;
+  std::cerr << "x " << x1 << " " << x2 << std::endl;
+  std::cerr << "y " << y1 << " " << y2 << std::endl;
+  std::cerr << "wav " << waveform << " flags " << flags << std::endl;
+
+  swtfb::xochitl_data data;
+  data.x1 = x1;
+  data.x2 = x2;
+  data.y1 = y1;
+  data.y2 = y2;
+  data.waveform = waveform;
+  data.flags = flags;
+  MSGQ.send(data);
+
+  return;
+  // return old_update(instance, x1, y1, x2, y2, waveform, flags);
+}
+
+int new_create_threads(const char *path, void *buf) {
+  std::cerr << "create threads called" << std::endl;
+  return 0;
+  // return old_create_threads(path, buf);
+}
+
+int new_wait(void) {
+  std::cerr << "wait func called" << std::endl;
+  return 0;
+  // return old_wait();
+}
+
+int new_shutdown(void) {
+  std::cerr << "shutdown called" << std::endl;
+  return 0;
+}
+
+GumInterceptor *interceptor;
+
 int __libc_start_main(int (*_main)(int, char **, char **), int argc,
                       char **argv, int (*init)(int, char **, char **),
                       void (*fini)(void), void (*rtld_fini)(void),
                       void *stack_end) {
 
-  if (string(argv[0]).find("xochitl") != string::npos) {
+  if (std::string(argv[0]).find("xochitl") != std::string::npos) {
     IN_XOCHITL = true;
+
+    auto *update_fn = swtfb::locate_signature(
+                          argv[0], "\x10\xd0\x4d\xe2\x7b\xc5\x00\xe3", 8) +
+                      4;
+    auto *create_threads_fn =
+        swtfb::locate_signature(
+            argv[0], "\xc0\x64\x11\x00\x70\x40\x2d\xe9\x00\x40\xa0\xe1", 12) +
+        8;
+
+    auto *wait_fn = swtfb::locate_signature(
+                        argv[0], "\x40\x6c\x11\x00\x10\x40\x2d\xe9", 8) +
+                    8;
+
+    auto *shutdown_fn = swtfb::locate_signature(
+                            argv[0], "\x70\x57\x16\x00\x70\x40\x2d\xe9", 8) +
+                        8;
+
+    std::cerr << "Update fn address: " << std::hex << (void *)update_fn
+              << "\nCreate th address: " << (void *)create_threads_fn
+              << "\nWait for th address: " << (void *)wait_fn
+              << "\nshutdown address: " << (void *)shutdown_fn << std::dec
+              << std::endl;
+
+    old_update = (decltype(old_update))update_fn;
+    old_create_threads = (decltype(old_create_threads))create_threads_fn;
+    old_wait = (decltype(old_wait))wait_fn;
+    old_shutdown = (decltype(old_shutdown))shutdown_fn;
+
+    gum_init_embedded();
+    interceptor = gum_interceptor_obtain();
+
+    if (gum_interceptor_replace(interceptor, update_fn, (void *)new_update,
+                                nullptr) != GUM_REPLACE_OK) {
+      std::cerr << "replace error" << std::endl;
+    }
+
+    if (gum_interceptor_replace(interceptor, create_threads_fn,
+                                (void *)new_create_threads,
+                                nullptr) != GUM_REPLACE_OK) {
+      std::cerr << "replace error" << std::endl;
+    }
+
+    if (gum_interceptor_replace(interceptor, wait_fn, (void *)new_wait,
+                                nullptr) != GUM_REPLACE_OK) {
+      std::cerr << "replace error" << std::endl;
+    }
+
+    if (gum_interceptor_replace(interceptor, shutdown_fn, (void *)new_shutdown,
+                                nullptr) != GUM_REPLACE_OK) {
+      std::cerr << "replace error" << std::endl;
+    }
+    // exit(0);
   }
 
   typeof(&__libc_start_main) func_main =

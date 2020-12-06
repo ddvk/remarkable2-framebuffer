@@ -21,9 +21,24 @@
 #endif
 
 namespace swtfb {
+struct xochitl_data {
+  int x1;
+  int y1;
+  int x2;
+  int y2;
+
+  int waveform;
+  int flags;
+};
 struct swtfb_update {
   long mtype;
-  struct mxcfb_update_data update;
+
+  union {
+    xochitl_data xochitl_update;
+
+    struct mxcfb_update_data update;
+  };
+
 #ifdef DEBUG_TIMING
   uint64_t ms;
 #endif
@@ -62,7 +77,7 @@ inline void mark_dirty(mxcfb_rect &dirty_area, mxcfb_rect &rect) {
 namespace ipc {
 
 using namespace std;
-enum MSG_TYPE { INIT_t = 1, UPDATE_t, STOP_t };
+enum MSG_TYPE { INIT_t = 1, UPDATE_t, XO_t };
 
 const int maxWidth = 1404;
 const int maxHeight = 1872;
@@ -108,7 +123,18 @@ public:
 
   Queue(int id) : id(id) { init(); }
 
-  void send(mxcfb_update_data msg, bool stop = false) {
+  void send(xochitl_data data) {
+    swtfb_update msg;
+    msg.mtype = XO_t;
+    msg.xochitl_update = data;
+
+    int wrote = msgsnd(msqid, (void *)&msg, sizeof(swtfb_update), 0);
+    if (wrote != 0) {
+      perror("Error sending xochitl update");
+    }
+  }
+
+  void send(mxcfb_update_data msg) {
 // TODO: read return value
 #ifdef DEBUG
     auto rect = msg.update_region;
@@ -117,7 +143,7 @@ public:
 #endif
 
     swtfb_update swtfb_msg;
-    swtfb_msg.mtype = stop ? STOP_t : UPDATE_t;
+    swtfb_msg.mtype = UPDATE_t;
     swtfb_msg.update = msg;
 
 #ifdef DEBUG_TIMING

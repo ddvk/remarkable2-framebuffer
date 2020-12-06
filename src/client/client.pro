@@ -19,4 +19,4 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 # Input
 SOURCES += main.cpp
-LIBS += -lrt -ldl
+LIBS += -lrt -ldl frida/libfrida-gum.a
