@@ -127,7 +127,9 @@ int ioctl(int fd, unsigned long request, char *ptr) {
 
         return 0;
       } else if (request == MXCFB_WAIT_FOR_UPDATE_COMPLETE) {
+#ifdef DEBUG
         std::cerr << "CLIENT: sync" << std::endl;
+#endif
         return 0;
       }
 
@@ -188,10 +190,12 @@ int (*old_shutdown)(void) = 0;
 
 void new_update(void *instance, int x1, int y1, int x2, int y2, int waveform,
                 int flags) {
+#ifdef DEBUG
   std::cerr << "UPDATE HOOK CALLED" << std::endl;
   std::cerr << "x " << x1 << " " << x2 << std::endl;
   std::cerr << "y " << y1 << " " << y2 << std::endl;
   std::cerr << "wav " << waveform << " flags " << flags << std::endl;
+#endif
 
   swtfb::xochitl_data data;
   data.x1 = x1;
@@ -201,21 +205,16 @@ void new_update(void *instance, int x1, int y1, int x2, int y2, int waveform,
   data.waveform = waveform;
   data.flags = flags;
   MSGQ.send(data);
-
-  return;
-  // return old_update(instance, x1, y1, x2, y2, waveform, flags);
 }
 
 int new_create_threads(const char *path, void *buf) {
   std::cerr << "create threads called" << std::endl;
   return 0;
-  // return old_create_threads(path, buf);
 }
 
 int new_wait(void) {
-  std::cerr << "wait func called" << std::endl;
+  std::cerr << "wait clear func called" << std::endl;
   return 0;
-  // return old_wait();
 }
 
 int new_shutdown(void) {
@@ -265,25 +264,24 @@ int __libc_start_main(int (*_main)(int, char **, char **), int argc,
 
     if (gum_interceptor_replace(interceptor, update_fn, (void *)new_update,
                                 nullptr) != GUM_REPLACE_OK) {
-      std::cerr << "replace error" << std::endl;
+      std::cerr << "replace update fnerror" << std::endl;
     }
 
     if (gum_interceptor_replace(interceptor, create_threads_fn,
                                 (void *)new_create_threads,
                                 nullptr) != GUM_REPLACE_OK) {
-      std::cerr << "replace error" << std::endl;
+      std::cerr << "replace create threads error" << std::endl;
     }
 
     if (gum_interceptor_replace(interceptor, wait_fn, (void *)new_wait,
                                 nullptr) != GUM_REPLACE_OK) {
-      std::cerr << "replace error" << std::endl;
+      std::cerr << "replace wait clear error" << std::endl;
     }
 
     if (gum_interceptor_replace(interceptor, shutdown_fn, (void *)new_shutdown,
                                 nullptr) != GUM_REPLACE_OK) {
-      std::cerr << "replace error" << std::endl;
+      std::cerr << "replace shutdown error" << std::endl;
     }
-    // exit(0);
   }
 
   typeof(&__libc_start_main) func_main =
