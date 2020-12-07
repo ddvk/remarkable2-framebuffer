@@ -45,16 +45,10 @@ public:
   }
 
   void initQT() {
-    qputenv("QMLSCENE_DEVICE", "epaper");
-    qputenv("QT_QPA_PLATFORM", "epaper:enable_fonts");
-
-    // needed for qpainter
-    char *argv[0];
-    int argc = 0;
-    app = new QGuiApplication(argc, argv);
     auto ptr = f_getInstance();
     instance = reinterpret_cast<QObject *>(ptr);
     img = (QImage *)(ptr + 8);
+
 #ifdef DEBUG
     dump_qtClass(instance);
 #endif
@@ -72,13 +66,16 @@ public:
   }
 
   void SendUpdate(const QRect &rect, int waveform, int flags) const {
+    // Method idx == 1
     QGenericArgument argWaveform("EPFramebuffer::WaveformMode", &waveform);
     QGenericArgument argUpdateMode("EPFramebuffer::UpdateFlags", &flags);
     QMetaObject::invokeMethod(instance, "sendUpdate", Qt::DirectConnection,
                               Q_ARG(QRect, rect), argWaveform, argUpdateMode);
   }
   void WaitForLastUpdate() const {
-    QMetaObject::invokeMethod(instance, "waitForLastUpdate", Qt::DirectConnection);
+    // TODO: method Idx == 5, just returns.
+    QMetaObject::invokeMethod(instance, "waitForLastUpdate",
+                              Qt::DirectConnection);
   }
 
   void DrawLine() {
