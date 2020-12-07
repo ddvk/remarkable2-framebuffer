@@ -49,6 +49,10 @@ void doUpdate(const SwtFB &fb, const swtfb_update &s) {
   // 8: highlight (same as high fidelity)
 
   int waveform = mxcfb_update.waveform_mode;
+  if (waveform > 3 && waveform != 8) {
+    waveform = 3;
+  }
+
   // full = 1, partial = 0
   auto update_mode = mxcfb_update.update_mode;
 
