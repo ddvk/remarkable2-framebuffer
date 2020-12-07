@@ -21,7 +21,6 @@
 #include <QCoreApplication>
 #include <QTouchEvent>
 
-// using namespace std;
 using namespace swtfb;
 
 int msg_q_id = 0x2257c;

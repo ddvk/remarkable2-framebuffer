@@ -173,7 +173,7 @@ int ioctl(int fd, unsigned long request, char *ptr) {
 static const auto touchArgs = QByteArray("rotate=180:invertx");
 
 bool _Z7qputenvPKcRK10QByteArray(const char *name, const QByteArray &val) {
-  auto orig_fn = (bool (*)(const char *, const QByteArray &))dlsym(
+  static auto orig_fn = (bool (*)(const char *, const QByteArray &))dlsym(
       RTLD_NEXT, "_Z7qputenvPKcRK10QByteArray");
 
   if (strcmp(name, "QT_QPA_EVDEV_TOUCHSCREEN_PARAMETERS") == 0) {
