@@ -92,7 +92,6 @@ public:
     cout << "drawing a line " << endl;
     cout << "send update" << endl;
     for (int i = 1; i < maxWidth - 4; i += 2) {
-      int i = maxWidth / 2;
       for (int j = 1; j < maxHeight - 2; j++) {
         QRect rect(i, j, 3, 3);
         img->setPixel(i + 1, j + 1, 0xFF);
