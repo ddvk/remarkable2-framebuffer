@@ -68,6 +68,11 @@ void doUpdate(const SwtFB &fb, const swtfb_update &s) {
     flags |= 2;
   }
 
+  if (waveform == /* fast */ 1 && update_mode == /* partial */ 0) {
+    // fast draw
+    flags = 4;
+  }
+
 #ifdef DEBUG
   std::cerr << "doUpdate " << endl;
   cerr << "mxc: waveform_mode " << mxcfb_update.waveform_mode << endl;

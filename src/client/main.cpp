@@ -277,23 +277,27 @@ int __libc_start_main(int (*_main)(int, char **, char **), int argc,
 
     if (gum_interceptor_replace(interceptor, update_fn, (void *)new_update,
                                 nullptr) != GUM_REPLACE_OK) {
-      std::cerr << "replace update fnerror" << std::endl;
+      std::cerr << "replace update fn error, see issue #18 on github"
+                << std::endl;
     }
 
     if (gum_interceptor_replace(interceptor, create_threads_fn,
                                 (void *)new_create_threads,
                                 nullptr) != GUM_REPLACE_OK) {
-      std::cerr << "replace create threads error" << std::endl;
+      std::cerr << "replace create threads fn error, see issue #18 on github"
+                << std::endl;
     }
 
     if (gum_interceptor_replace(interceptor, wait_fn, (void *)new_wait,
                                 nullptr) != GUM_REPLACE_OK) {
-      std::cerr << "replace wait clear error" << std::endl;
+      std::cerr << "replace wait clear fn error, see issue #18 on github"
+                << std::endl;
     }
 
     if (gum_interceptor_replace(interceptor, shutdown_fn, (void *)new_shutdown,
                                 nullptr) != GUM_REPLACE_OK) {
-      std::cerr << "replace shutdown error" << std::endl;
+      std::cerr << "replace shutdown fn error, see issue #18 on github"
+                << std::endl;
     }
   }
 
