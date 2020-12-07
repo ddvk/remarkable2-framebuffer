@@ -26,7 +26,7 @@ using namespace swtfb;
 int msg_q_id = 0x2257c;
 ipc::Queue MSGQ(msg_q_id);
 
-const int SIZE = 2;
+const int BYTES_PER_PIXEL = sizeof(uint16_t);
 
 uint16_t *shared_mem;
 
@@ -39,7 +39,9 @@ void doUpdate(const SwtFB &fb, const swtfb_update &s) {
             << rect.width << " " << rect.height << endl;
 #endif
 
-  // For now, we are using two waveform modes:
+  // There are three update modes on the rm2. But they are mapped to the five
+  // rm1 modes as follows:
+  //
   // 0: init (same as GL16)
   // 1: DU - direct update, fast
   // 2: GC16 - high fidelity (slow)
@@ -76,11 +78,6 @@ void doUpdate(const SwtFB &fb, const swtfb_update &s) {
 #endif
 
   fb.DrawRaw(rect.left, rect.top, rect.width, rect.height, waveform, flags);
-
-#ifdef DEBUG_TIMING
-  cerr << get_now() -.ms << "ms E2E " << rect.width << " " << rect.height
-       << endl;
-#endif
 }
 
 extern "C" {
@@ -105,11 +102,11 @@ static void _libhook_init() {
 bool FIRST_ALLOC = true;
 void _ZN6QImageC1EiiNS_6FormatE(void *that, int x, int y, int f) {
   if (x == WIDTH && y == HEIGHT && FIRST_ALLOC) {
-    fprintf(stderr, "REPLACING THE IMAGE with /dev/shm/xofb \n");
+    fprintf(stderr, "REPLACING THE IMAGE with shared memory\n");
 
     FIRST_ALLOC = false;
     qImageCtorWithBuffer(that, (uint8_t *)shared_mem, WIDTH, HEIGHT,
-                         WIDTH * SIZE, f, nullptr, nullptr);
+                         WIDTH * BYTES_PER_PIXEL, f, nullptr, nullptr);
     return;
   }
   qImageCtor(that, x, y, f);

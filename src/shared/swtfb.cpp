@@ -45,16 +45,6 @@ public:
   }
 
   void initQT() {
-
-    // TODO: is this needed?
-    // qputenv("QMLSCENE_DEVICE", "epaper");
-    // qputenv("QT_QPA_PLATFORM", "epaper:enable_fonts");
-
-    // // needed for qpainter
-    // char *argv[0];
-    // int argc = 0;
-    // app = new QGuiApplication(argc, argv);
-
     auto ptr = f_getInstance();
     instance = reinterpret_cast<QObject *>(ptr);
     img = (QImage *)(ptr + 8);

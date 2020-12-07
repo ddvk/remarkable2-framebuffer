@@ -28,7 +28,7 @@ swtfb::ipc::Queue MSGQ(msg_q_id);
 
 uint16_t *SHARED_BUF;
 
-const int SIZE = 2;
+const int BYTES_PER_PIXEL = sizeof(uint16_t);
 
 bool IN_XOCHITL = false;
 
@@ -68,12 +68,12 @@ static void _libhook_init() {
 bool FIRST_ALLOC = true;
 void _ZN6QImageC1EiiNS_6FormatE(void *that, int x, int y, int f) {
   if (IN_XOCHITL && x == swtfb::WIDTH && y == swtfb::HEIGHT && FIRST_ALLOC) {
-    fprintf(stderr, "REPLACING THE IMAGE with /dev/shm/xofb \n");
+    fprintf(stderr, "REPLACING THE IMAGE with shared memory\n");
 
     FIRST_ALLOC = false;
     qImageCtorWithBuffer(that, (uint8_t *)SHARED_BUF, swtfb::WIDTH,
-                         swtfb::HEIGHT, swtfb::WIDTH * SIZE, f, nullptr,
-                         nullptr);
+                         swtfb::HEIGHT, swtfb::WIDTH * BYTES_PER_PIXEL, f,
+                         nullptr, nullptr);
     return;
   }
   qImageCtor(that, x, y, f);
@@ -232,21 +232,34 @@ int __libc_start_main(int (*_main)(int, char **, char **), int argc,
   if (std::string(argv[0]).find("xochitl") != std::string::npos) {
     IN_XOCHITL = true;
 
-    auto *update_fn = swtfb::locate_signature(
-                          argv[0], "\x10\xd0\x4d\xe2\x7b\xc5\x00\xe3", 8) +
-                      4;
-    auto *create_threads_fn =
-        swtfb::locate_signature(
-            argv[0], "\xc0\x64\x11\x00\x70\x40\x2d\xe9\x00\x40\xa0\xe1", 12) +
-        8;
+    auto *update_fn =
+        swtfb::locate_signature(argv[0], "\x54\x40\x8d\xe2\x10\x50\x8d\xe2", 8);
+    if (update_fn == nullptr) {
+      std::cerr << "Unable to find update fn" << std::endl;
+      return -1;
+    }
+    update_fn -= 12;
 
-    auto *wait_fn = swtfb::locate_signature(
-                        argv[0], "\x40\x6c\x11\x00\x10\x40\x2d\xe9", 8) +
-                    8;
+    auto *create_threads_fn = swtfb::locate_signature(
+        argv[0], "\x00\x40\xa0\xe1\x10\x52\x9f\xe5\x6b\x0d\xa0\xe3", 12);
+    if (create_threads_fn == nullptr) {
+      std::cerr << "Unable to find update fn" << std::endl;
+      return -1;
+    }
 
-    auto *shutdown_fn = swtfb::locate_signature(
-                            argv[0], "\x70\x57\x16\x00\x70\x40\x2d\xe9", 8) +
-                        8;
+    auto *wait_fn =
+        swtfb::locate_signature(argv[0], "\x01\x30\xa0\xe3\x30\x40\x9f\xe5", 8);
+    if (wait_fn == nullptr) {
+      std::cerr << "Unable to find update fn" << std::endl;
+      return -1;
+    }
+
+    auto *shutdown_fn =
+        swtfb::locate_signature(argv[0], "\x01\x50\xa0\xe3\x44\x40\x9f\xe5", 8);
+    if (shutdown_fn == nullptr) {
+      std::cerr << "Unable to find update fn" << std::endl;
+      return -1;
+    }
 
     std::cerr << "Update fn address: " << std::hex << (void *)update_fn
               << "\nCreate th address: " << (void *)create_threads_fn
