@@ -30,7 +30,7 @@ const int BYTES_PER_PIXEL = sizeof(uint16_t);
 
 uint16_t *shared_mem;
 
-void doUpdate(const SwtFB &fb, const swtfb_update &s) {
+void doUpdate(SwtFB &fb, const swtfb_update &s) {
   auto mxcfb_update = s.update;
   auto rect = mxcfb_update.update_region;
 
@@ -51,6 +51,12 @@ void doUpdate(const SwtFB &fb, const swtfb_update &s) {
   int waveform = mxcfb_update.waveform_mode;
   if (waveform > 3 && waveform != 8) {
     waveform = 3;
+    fb.ClearGhosting();
+  }
+
+  if (waveform < 0) {
+    waveform = 3;
+    fb.ClearGhosting();
   }
 
   // full = 1, partial = 0
