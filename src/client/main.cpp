@@ -42,6 +42,7 @@ static void (*qImageCtorWithBuffer)(void *that, uint8_t *, int32_t x, int32_t y,
                                     int32_t bytes, int format, void (*)(void *),
                                     void *) = 0;
 
+bool DISABLED = false;
 static void _libhook_init() __attribute__((constructor));
 static void _libhook_init() {
   std::ios_base::Init i;
@@ -54,6 +55,11 @@ static void _libhook_init() {
     setenv("RM2FB_NESTED", "1", true);
   } else {
     setenv("RM2FB_ACTIVE", "1", true);
+  }
+
+  if (getenv("RM2FB_DISABLE") != "") {
+    DISABLED = true;
+    return;
   }
 
   qImageCtor = (void (*)(void *, int, int, int))dlsym(
@@ -224,11 +230,7 @@ int new_shutdown(void) {
 
 GumInterceptor *interceptor;
 
-int __libc_start_main(int (*_main)(int, char **, char **), int argc,
-                      char **argv, int (*init)(int, char **, char **),
-                      void (*fini)(void), void (*rtld_fini)(void),
-                      void *stack_end) {
-
+int intercept_xochitl(char **argv) {
   if (std::string(argv[0]).find("xochitl") != std::string::npos) {
     IN_XOCHITL = true;
 
@@ -311,6 +313,17 @@ int __libc_start_main(int (*_main)(int, char **, char **), int argc,
       std::cerr << "replace shutdown fn error" << std::endl;
       return -1;
     }
+  }
+
+}
+
+int __libc_start_main(int (*_main)(int, char **, char **), int argc,
+                      char **argv, int (*init)(int, char **, char **),
+                      void (*fini)(void), void (*rtld_fini)(void),
+                      void *stack_end) {
+
+  if (!DISABLED) {
+    intercept_xochitl(argv);
   }
 
   typeof(&__libc_start_main) func_main =
