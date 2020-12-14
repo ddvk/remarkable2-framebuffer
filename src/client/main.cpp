@@ -136,10 +136,20 @@ int ioctl(int fd, unsigned long request, char *ptr) {
       else if (request == FBIOGET_VSCREENINFO) {
 
         fb_var_screeninfo *screeninfo = (fb_var_screeninfo *)ptr;
-        screeninfo->xres = 1404;
-        screeninfo->yres = 1872;
+        screeninfo->xres = swtfb::WIDTH;
+        screeninfo->yres = swtfb::HEIGHT;
         screeninfo->grayscale = 0;
         screeninfo->bits_per_pixel = 16;
+        screeninfo->xres_virtual = swtfb::WIDTH;
+        screeninfo->yres_virtual = swtfb::HEIGHT;
+
+        //set to RGB565
+        screeninfo->red.offset = 11;
+        screeninfo->red.length = 5;
+        screeninfo->green.offset = 5;
+        screeninfo->green.length = 6;
+        screeninfo->blue.offset = 0;
+        screeninfo->blue.length = 5;
         return 0;
       }
 
