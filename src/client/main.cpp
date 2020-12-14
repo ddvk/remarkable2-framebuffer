@@ -57,16 +57,16 @@ static void _libhook_init() {
     setenv("RM2FB_ACTIVE", "1", true);
   }
 
-  if (getenv("RM2FB_DISABLE") != "") {
-    DISABLED = true;
-    return;
-  }
-
   qImageCtor = (void (*)(void *, int, int, int))dlsym(
       RTLD_NEXT, "_ZN6QImageC1EiiNS_6FormatE");
   qImageCtorWithBuffer = (void (*)(
       void *, uint8_t *, int32_t, int32_t, int32_t, int, void (*)(void *),
       void *))dlsym(RTLD_NEXT, "_ZN6QImageC1EPhiiiNS_6FormatEPFvPvES2_");
+
+  if (getenv("RM2FB_DISABLE") != "") {
+    DISABLED = true;
+    return;
+  }
 
   SHARED_BUF = swtfb::ipc::get_shared_buffer();
 }
