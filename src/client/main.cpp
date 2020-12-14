@@ -113,6 +113,20 @@ int open(const char *pathname, int flags, mode_t mode = 0) {
   return r;
 }
 
+int close(int fd) {
+  static int (*func_close)(int) = NULL;
+
+  if (!func_close) {
+    func_close = (int (*)(int))dlsym(RTLD_NEXT, "close");
+  }
+
+  if (fd == swtfb::ipc::SWTFB_FD) {
+    return 0;
+  }
+
+  return func_close(fd);
+}
+
 int ioctl(int fd, unsigned long request, char *ptr) {
   static int (*func_ioctl)(int, unsigned long, ...) = NULL;
   if (not IN_XOCHITL) {
