@@ -1,14 +1,21 @@
 ## remarkable2-framebuffer
 
-This repo contains a proof of concept for drawing to the rM2's framebuffer.
+This repo contains code for drawing to the rM2's framebuffer.
 
 ## Status
 
-quality: pre-alpha
+quality: beta
 
-rm2fb can open the framebuffer and draw to it. Additionally, it exposes a
-simple API for other processes to draw to the framebuffer using shared mem and
-message queues.
+rm2fb can open the framebuffer and draw to it. rm2fb-server exposes a simple
+API for other processes to draw to the framebuffer using shared mem and message
+queues. rm2fb-client is a shim that creates a fake framebuffer device for apps
+to use, allowing rM1 apps to seamlessly draw to the display of the rM2.
+
+## Installation
+
+rm2fb is available as a package in [toltec](https://github.com/toltec-dev/toltec) which
+sets up the server and client parts for you. Otherwise, the instructions below can be used
+for manual installation.
 
 ## Set up build environment
 
@@ -33,14 +40,13 @@ build `src/server/librm2fb_server.so.1.0.0`.  Copy it to your
 remarkable and run:
 
 ```
-LD_PRELOAD=/path/to/librm2fb_server.so /usr/bin/remarkable-shutdown
+LD_PRELOAD=/path/to/librm2fb_server.so.1.0.0 /usr/bin/remarkable-shutdown
 ```
-
 
 ### Framebuffer Client Shim
 
 build `src/client/librm2fb_client.so.1.0.0`.  Copy it to your
-remarkable and run: `LD_PRELOAD=/path/to/librm2fb_client.so <rm1app>` to
+remarkable and run: `LD_PRELOAD=/path/to/librm2fb_client.so.1.0.0 <rm1app>` to
 run your app.
 
 The client intercepts interactions with `/dev/fb0` and forwards them to the
@@ -57,7 +63,7 @@ on doing so people can see ongoing progress.
 Things that can use help:
 
 * writing documentation
-* setting up this repository build system and CI
+* testing apps and packages
 * understanding the waveforms used by SWTCON
 * writing our own implementation of SWTCON
 
@@ -75,6 +81,9 @@ probably not, but no guarantees
 
 * [what's up with server/client API?](https://github.com/ddvk/remarkable2-framebuffer/issues/4)
 
+* [where can i find more information on the framebuffer?](https://remarkablewiki.com/tech/rm2_framebuffer)
+
+* [what about implementing an open source SWTCON?](https://github.com/timower/rM2-stuff/)
 
 * how can I get in touch?
 
