@@ -5,11 +5,16 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <errno.h>
 
 namespace swtfb {
 // from https://stackoverflow.com/a/14002993/442652
 char *read_file(const char *filename, int *out_size) {
   FILE *f = fopen(filename, "rb");
+  if (f == NULL) {
+    fprintf(stderr, "Unable to open %s: %s\n", filename, strerror(errno));
+    exit(-1);
+  }
   fseek(f, 0, SEEK_END);
   long fsize = ftell(f);
   fseek(f, 0, SEEK_SET); /* same as rewind(f); */
