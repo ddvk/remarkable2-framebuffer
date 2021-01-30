@@ -19,4 +19,5 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 # Input
 SOURCES += main.cpp
-LIBS += -lrt -ldl frida/libfrida-gum.a
+CONFIG += hide_symbols
+LIBS += -lrt -ldl frida/libfrida-gum.a -Wl,--exclude-libs,ALL
