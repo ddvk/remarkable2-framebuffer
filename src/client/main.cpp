@@ -246,6 +246,18 @@ int new_shutdown(void) {
   return 0;
 }
 
+static std::string readlink_string(const char* link_path) {
+  char buffer[PATH_MAX];
+  ssize_t len = readlink(link_path, buffer, sizeof(buffer) - 1);
+
+  if (len == -1) {
+    return "";
+  }
+
+  buffer[len] = '\0';
+  return buffer;
+}
+
 GumInterceptor *interceptor;
 
 int __libc_start_main(int (*_main)(int, char **, char **), int argc,
@@ -253,11 +265,18 @@ int __libc_start_main(int (*_main)(int, char **, char **), int argc,
                       void (*fini)(void), void (*rtld_fini)(void),
                       void *stack_end) {
 
-  if (std::string(argv[0]).find("xochitl") != std::string::npos) {
+  auto binary_path = readlink_string("/proc/self/exe");
+
+  if (binary_path.empty()) {
+    std::cerr << "Unable to find current binary path\n";
+    return -1;
+  }
+
+  if (binary_path == "/usr/bin/xochitl") {
     IN_XOCHITL = true;
 
-    auto *update_fn =
-        swtfb::locate_signature(argv[0], "\x54\x40\x8d\xe2\x10\x50\x8d\xe2", 8);
+    auto *update_fn = swtfb::locate_signature(
+        binary_path.c_str(), "\x54\x40\x8d\xe2\x10\x50\x8d\xe2", 8);
     if (update_fn == nullptr) {
       std::cerr << "Unable to find update fn" << std::endl;
       std::cerr << "PLEASE SEE "
@@ -268,7 +287,7 @@ int __libc_start_main(int (*_main)(int, char **, char **), int argc,
     update_fn -= 12;
 
     auto *create_threads_fn = swtfb::locate_signature(
-        argv[0], "\x00\x40\xa0\xe1\x10\x52\x9f\xe5\x6b\x0d\xa0\xe3", 12);
+        binary_path.c_str(), "\x00\x40\xa0\xe1\x10\x52\x9f\xe5\x6b\x0d\xa0\xe3", 12);
     if (create_threads_fn == nullptr) {
       std::cerr << "Unable to find create threads fn" << std::endl;
       std::cerr << "PLEASE SEE "
@@ -277,8 +296,8 @@ int __libc_start_main(int (*_main)(int, char **, char **), int argc,
       return -1;
     }
 
-    auto *wait_fn =
-        swtfb::locate_signature(argv[0], "\x01\x30\xa0\xe3\x30\x40\x9f\xe5", 8);
+    auto *wait_fn = swtfb::locate_signature(
+        binary_path.c_str(), "\x01\x30\xa0\xe3\x30\x40\x9f\xe5", 8);
     if (wait_fn == nullptr) {
       std::cerr << "Unable to find wait threads fn" << std::endl;
       std::cerr << "PLEASE SEE "
@@ -287,8 +306,8 @@ int __libc_start_main(int (*_main)(int, char **, char **), int argc,
       return -1;
     }
 
-    auto *shutdown_fn =
-        swtfb::locate_signature(argv[0], "\x01\x50\xa0\xe3\x44\x40\x9f\xe5", 8);
+    auto *shutdown_fn = swtfb::locate_signature(
+        binary_path.c_str(), "\x01\x50\xa0\xe3\x44\x40\x9f\xe5", 8);
     if (shutdown_fn == nullptr) {
       std::cerr << "Unable to find shutdown fn" << std::endl;
       std::cerr << "PLEASE SEE "
