@@ -42,7 +42,7 @@ static void (*qImageCtorWithBuffer)(void *that, uint8_t *, int32_t x, int32_t y,
                                     int32_t bytes, int format, void (*)(void *),
                                     void *) = 0;
 
-static void _libhook_init() __attribute__((constructor));
+static void _libhook_init() __attribute__((constructor, visibility("default")));
 static void _libhook_init() {
   std::ios_base::Init i;
 
@@ -66,6 +66,8 @@ static void _libhook_init() {
 }
 
 bool FIRST_ALLOC = true;
+
+__attribute__((visibility("default")))
 void _ZN6QImageC1EiiNS_6FormatE(void *that, int x, int y, int f) {
   if (IN_XOCHITL && x == swtfb::WIDTH && y == swtfb::HEIGHT && FIRST_ALLOC) {
     fprintf(stderr, "REPLACING THE IMAGE with shared memory\n");
@@ -79,6 +81,7 @@ void _ZN6QImageC1EiiNS_6FormatE(void *that, int x, int y, int f) {
   qImageCtor(that, x, y, f);
 }
 
+__attribute__((visibility("default")))
 int open64(const char *pathname, int flags, mode_t mode = 0) {
   static int (*func_open)(const char *, int, mode_t) = NULL;
 
@@ -96,6 +99,7 @@ int open64(const char *pathname, int flags, mode_t mode = 0) {
   return r;
 }
 
+__attribute__((visibility("default")))
 int open(const char *pathname, int flags, mode_t mode = 0) {
   static int (*func_open)(const char *, int, mode_t) = NULL;
 
@@ -113,6 +117,7 @@ int open(const char *pathname, int flags, mode_t mode = 0) {
   return r;
 }
 
+__attribute__((visibility("default")))
 int close(int fd) {
   static int (*func_close)(int) = NULL;
 
@@ -127,6 +132,7 @@ int close(int fd) {
   return func_close(fd);
 }
 
+__attribute__((visibility("default")))
 int ioctl(int fd, unsigned long request, char *ptr) {
   static int (*func_ioctl)(int, unsigned long, ...) = NULL;
   if (not IN_XOCHITL) {
@@ -196,6 +202,7 @@ int ioctl(int fd, unsigned long request, char *ptr) {
 
 static const auto touchArgs = QByteArray("rotate=180:invertx");
 
+__attribute__((visibility("default")))
 bool _Z7qputenvPKcRK10QByteArray(const char *name, const QByteArray &val) {
   static auto orig_fn = (bool (*)(const char *, const QByteArray &))dlsym(
       RTLD_NEXT, "_Z7qputenvPKcRK10QByteArray");
@@ -260,6 +267,7 @@ static std::string readlink_string(const char* link_path) {
 
 GumInterceptor *interceptor;
 
+__attribute__((visibility("default")))
 int __libc_start_main(int (*_main)(int, char **, char **), int argc,
                       char **argv, int (*init)(int, char **, char **),
                       void (*fini)(void), void (*rtld_fini)(void),
@@ -363,4 +371,5 @@ int __libc_start_main(int (*_main)(int, char **, char **), int argc,
 }
 };
 
+__attribute__((visibility("default")))
 int main() { (void)0; };
