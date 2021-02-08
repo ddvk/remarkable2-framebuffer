@@ -168,7 +168,9 @@ int ioctl(int fd, unsigned long request, char *ptr) {
         MSGQ.send(update);
 
         sem_t *sem = sem_open(update.sem_name, O_CREAT);
-        sem_wait(sem);
+        struct timespec timeout = {0, 0};
+        timeout.tv_nsec = 200 * 1000 * 1000; // nanosecond is 1e-9, ms is 1e-3
+        sem_timedwait(sem, &timeout);
         sem_unlink(update.sem_name);
 
 #ifdef DEBUG
