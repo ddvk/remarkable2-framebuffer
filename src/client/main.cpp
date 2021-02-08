@@ -154,7 +154,7 @@ int ioctl(int fd, unsigned long request, char *ptr) {
 
         // for wait ioctl, we drop a WAIT_t message into the queue.  the server
         // then uses that message to signal the semaphore we just opened. this
-        // can take as little as 0.5ms for small updates one difference is that
+        // can take as little as 0.5ms for small updates. one difference is that
         // the ioctl now waits for all pending updates, not just the requested
         // scheduled one.
         swtfb::ClockWatch cz;
@@ -171,6 +171,11 @@ int ioctl(int fd, unsigned long request, char *ptr) {
         struct timespec timeout = {0, 0};
         timeout.tv_nsec = 200 * 1000 * 1000; // nanosecond is 1e-9, ms is 1e-3
         sem_timedwait(sem, &timeout);
+
+        // on linux, unlink will delete the semaphore once all processes using
+        // it are closed. the idea here is that the client removes the semaphore
+        // as soon as possible
+        // TODO: validate this assumption
         sem_unlink(update.sem_name);
 
 #ifdef DEBUG
