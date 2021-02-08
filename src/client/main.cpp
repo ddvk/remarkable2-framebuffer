@@ -3,6 +3,7 @@
 #include <libgen.h>
 #include <linux/fb.h>
 #include <linux/ioctl.h>
+#include <semaphore.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -149,6 +150,29 @@ int ioctl(int fd, unsigned long request, char *ptr) {
       } else if (request == MXCFB_WAIT_FOR_UPDATE_COMPLETE) {
 #ifdef DEBUG
         std::cerr << "CLIENT: sync" << std::endl;
+#endif
+
+        // for wait ioctl, we drop a WAIT_t message into the queue.  the server
+        // then uses that message to signal the semaphore we just opened. this
+        // can take as little as 0.5ms for small updates one difference is that
+        // the ioctl now waits for all pending updates, not just the requested
+        // scheduled one.
+        swtfb::ClockWatch cz;
+        swtfb::wait_sem_data update;
+        std::string sem_name = std::string("/rm2fb.wait.");
+        sem_name += std::to_string(getpid());
+
+        memcpy(update.sem_name, sem_name.c_str(), sem_name.size());
+        update.sem_name[sem_name.size()] = 0;
+
+        MSGQ.send(update);
+
+        sem_t *sem = sem_open(update.sem_name, O_CREAT);
+        sem_wait(sem);
+        sem_unlink(update.sem_name);
+
+#ifdef DEBUG
+        std::cerr << "FINISHED WAIT IOCTL " << cz.elapsed() << std::endl;
 #endif
         return 0;
       }
