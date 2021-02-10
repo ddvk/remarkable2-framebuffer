@@ -20,7 +20,7 @@
 #include "frida/frida-gum.h"
 
 #define FB_ID "mxcfb"
-#define BILLION 1000000000
+
 #define SEM_WAIT_TIMEOUT 200000000 /* 200 * 1000 * 1000, e.g. 200ms */
 
 #ifndef _GNU_SOURCE
@@ -181,9 +181,9 @@ int ioctl(int fd, unsigned long request, char *ptr) {
         }
 
         timeout.tv_nsec += SEM_WAIT_TIMEOUT;
-        if (timeout.tv_nsec >= BILLION) {
-          timeout.tv_nsec -= BILLION;
-          timeout.tv_sec += 1;
+        if (timeout.tv_nsec >= 1e9) {
+          timeout.tv_nsec -= 1e9;
+          timeout.tv_sec++;
         }
 
         sem_timedwait(sem, &timeout);
