@@ -20,6 +20,8 @@
 #include "frida/frida-gum.h"
 
 #define FB_ID "mxcfb"
+#define BILLION 1000000000
+#define SEM_WAIT_TIMEOUT 200000000 /* 200 * 1000 * 1000, e.g. 200ms */
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -177,7 +179,13 @@ int ioctl(int fd, unsigned long request, char *ptr) {
           std::cerr << "clock_gettime failed" << std::endl;
 #endif
         }
-        timeout.tv_nsec += 200 * 1000 * 1000; // nanosecond is 1e-9, ms is 1e-3
+
+        timeout.tv_nsec += SEM_WAIT_TIMEOUT;
+        if (timeout.tv_nsec >= BILLION) {
+          timeout.tv_nsec -= BILLION;
+          timeout.tv_sec += 1;
+        }
+
         sem_timedwait(sem, &timeout);
 
         // on linux, unlink will delete the semaphore once all processes using
