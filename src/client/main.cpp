@@ -10,6 +10,7 @@
 #include <string.h>
 #include <string>
 #include <unistd.h>
+#include <time.h>
 
 #include <QByteArray>
 
@@ -168,8 +169,15 @@ int ioctl(int fd, unsigned long request, char *ptr) {
         MSGQ.send(update);
 
         sem_t *sem = sem_open(update.sem_name, O_CREAT);
-        struct timespec timeout = {0, 0};
-        timeout.tv_nsec = 200 * 1000 * 1000; // nanosecond is 1e-9, ms is 1e-3
+        struct timespec timeout;
+        if (clock_gettime(CLOCK_REALTIME, &timeout) == -1) {
+          // Probably unnecessary fallback
+          timeout = {0, 0};
+#ifdef DEBUG
+          std::cerr << "clock_gettime failed" << std::endl;
+#endif
+        }
+        timeout.tv_nsec += 200 * 1000 * 1000; // nanosecond is 1e-9, ms is 1e-3
         sem_timedwait(sem, &timeout);
 
         // on linux, unlink will delete the semaphore once all processes using
