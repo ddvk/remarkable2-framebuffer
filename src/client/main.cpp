@@ -34,16 +34,6 @@ __attribute__((constructor))
 void init() {
   std::ios_base::Init i;
 
-  constexpr auto VERSION = "0.1";
-
-  setenv("RM2FB_SHIM", VERSION, true);
-
-  if (getenv("RM2FB_ACTIVE") != nullptr) {
-    setenv("RM2FB_NESTED", "1", true);
-  } else {
-    setenv("RM2FB_ACTIVE", "1", true);
-  }
-
   std::ifstream device_id_file{"/sys/devices/soc0/machine"};
   std::string device_id;
   std::getline(device_id_file, device_id);
@@ -51,6 +41,15 @@ void init() {
   if (device_id == "reMarkable 2.0") {
     SHARED_BUF = swtfb::ipc::get_shared_buffer();
     ON_RM2 = true;
+
+    constexpr auto VERSION = "0.1";
+    setenv("RM2FB_SHIM", VERSION, true);
+
+    if (getenv("RM2FB_ACTIVE") != nullptr) {
+        setenv("RM2FB_NESTED", "1", true);
+    } else {
+        setenv("RM2FB_ACTIVE", "1", true);
+    }
   }
 }
 
