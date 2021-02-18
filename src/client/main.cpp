@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string>
+#include <fstream>
 #include <unistd.h>
 
 #include <QByteArray>
@@ -17,59 +18,51 @@
 
 #include "frida/frida-gum.h"
 
-#define FB_ID "mxcfb"
-
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
-int msg_q_id = 0x2257c;
+constexpr auto msg_q_id = 0x2257c;
 swtfb::ipc::Queue MSGQ(msg_q_id);
 
-uint16_t *SHARED_BUF;
+uint16_t *SHARED_BUF = nullptr;
 
-const int BYTES_PER_PIXEL = sizeof(uint16_t);
+constexpr auto BYTES_PER_PIXEL = sizeof(*SHARED_BUF);
 
 bool IN_XOCHITL = false;
+bool ON_RM2 = false;
 
 extern "C" {
-struct stat;
 
-// QImage(width, height, format)
-static void (*qImageCtor)(void *that, int x, int y, int f) = 0;
-// QImage(uchar*, width, height, bytesperline, format)
-static void (*qImageCtorWithBuffer)(void *that, uint8_t *, int32_t x, int32_t y,
-                                    int32_t bytes, int format, void (*)(void *),
-                                    void *) = 0;
-
-static void _libhook_init() __attribute__((constructor, visibility("default")));
-static void _libhook_init() {
+__attribute__((constructor))
+void init() {
   std::ios_base::Init i;
 
-  auto VERSION = "0.1";
+  std::ifstream device_id_file{"/sys/devices/soc0/machine"};
+  std::string device_id;
+  std::getline(device_id_file, device_id);
 
-  setenv("RM2FB_SHIM", VERSION, true);
+  if (device_id == "reMarkable 2.0") {
+    SHARED_BUF = swtfb::ipc::get_shared_buffer();
+    ON_RM2 = true;
 
-  if (getenv("RM2FB_ACTIVE") != "") {
-    setenv("RM2FB_NESTED", "1", true);
-  } else {
-    setenv("RM2FB_ACTIVE", "1", true);
+    constexpr auto VERSION = "0.1";
+    setenv("RM2FB_SHIM", VERSION, true);
+
+    if (getenv("RM2FB_ACTIVE") != nullptr) {
+        setenv("RM2FB_NESTED", "1", true);
+    } else {
+        setenv("RM2FB_ACTIVE", "1", true);
+    }
   }
-
-  qImageCtor = (void (*)(void *, int, int, int))dlsym(
-      RTLD_NEXT, "_ZN6QImageC1EiiNS_6FormatE");
-  qImageCtorWithBuffer = (void (*)(
-      void *, uint8_t *, int32_t, int32_t, int32_t, int, void (*)(void *),
-      void *))dlsym(RTLD_NEXT, "_ZN6QImageC1EPhiiiNS_6FormatEPFvPvES2_");
-
-  SHARED_BUF = swtfb::ipc::get_shared_buffer();
 }
-
-bool FIRST_ALLOC = true;
 
 __attribute__((visibility("default")))
 void _ZN6QImageC1EiiNS_6FormatE(void *that, int x, int y, int f) {
-  if (IN_XOCHITL && x == swtfb::WIDTH && y == swtfb::HEIGHT && FIRST_ALLOC) {
+  static bool FIRST_ALLOC = true;
+  static const auto qImageCtor = (void (*)(void *, int, int, int))dlsym(
+      RTLD_NEXT, "_ZN6QImageC1EiiNS_6FormatE");
+  static const auto qImageCtorWithBuffer = (void (*)(
+      void *, uint8_t *, int32_t, int32_t, int32_t, int, void (*)(void *),
+      void *))dlsym(RTLD_NEXT, "_ZN6QImageC1EPhiiiNS_6FormatEPFvPvES2_");
+
+  if (ON_RM2 && IN_XOCHITL && x == swtfb::WIDTH && y == swtfb::HEIGHT && FIRST_ALLOC) {
     fprintf(stderr, "REPLACING THE IMAGE with shared memory\n");
 
     FIRST_ALLOC = false;
@@ -83,144 +76,120 @@ void _ZN6QImageC1EiiNS_6FormatE(void *that, int x, int y, int f) {
 
 __attribute__((visibility("default")))
 int open64(const char *pathname, int flags, mode_t mode = 0) {
-  static int (*func_open)(const char *, int, mode_t) = NULL;
-
-  if (!func_open) {
-    func_open = (int (*)(const char *, int, mode_t))dlsym(RTLD_NEXT, "open64");
-  }
-
-  auto r = func_open(pathname, flags, mode);
-  if (not IN_XOCHITL) {
+  if (ON_RM2 && !IN_XOCHITL) {
     if (pathname == std::string("/dev/fb0")) {
       return swtfb::ipc::SWTFB_FD;
     }
   }
 
-  return r;
+  static const auto func_open = (int (*)(const char *, int, mode_t))
+    dlsym(RTLD_NEXT, "open64");
+
+  return func_open(pathname, flags, mode);
 }
 
 __attribute__((visibility("default")))
 int open(const char *pathname, int flags, mode_t mode = 0) {
-  static int (*func_open)(const char *, int, mode_t) = NULL;
-
-  if (!func_open) {
-    func_open = (int (*)(const char *, int, mode_t))dlsym(RTLD_NEXT, "open");
-  }
-
-  auto r = func_open(pathname, flags, mode);
-  if (not IN_XOCHITL) {
+  if (ON_RM2 && !IN_XOCHITL) {
     if (pathname == std::string("/dev/fb0")) {
       return swtfb::ipc::SWTFB_FD;
     }
   }
 
-  return r;
+  static const auto func_open = (int (*)(const char *, int, mode_t))
+    dlsym(RTLD_NEXT, "open");
+
+  return func_open(pathname, flags, mode);
 }
 
 __attribute__((visibility("default")))
 int close(int fd) {
-  static int (*func_close)(int) = NULL;
-
-  if (!func_close) {
-    func_close = (int (*)(int))dlsym(RTLD_NEXT, "close");
-  }
-
-  if (fd == swtfb::ipc::SWTFB_FD) {
+  if (ON_RM2 && fd == swtfb::ipc::SWTFB_FD) {
     return 0;
   }
+
+  static const auto func_close = (int (*)(int))dlsym(RTLD_NEXT, "close");
 
   return func_close(fd);
 }
 
 __attribute__((visibility("default")))
 int ioctl(int fd, unsigned long request, char *ptr) {
-  static int (*func_ioctl)(int, unsigned long, ...) = NULL;
-  if (not IN_XOCHITL) {
+  if (ON_RM2 && !IN_XOCHITL && fd == swtfb::ipc::SWTFB_FD) {
+    if (request == MXCFB_SEND_UPDATE) {
 
-    if (fd == swtfb::ipc::SWTFB_FD) {
-      if (request == MXCFB_SEND_UPDATE) {
+      mxcfb_update_data *update = (mxcfb_update_data *)ptr;
+      MSGQ.send(*update);
+      return 0;
+    } else if (request == MXCFB_SET_AUTO_UPDATE_MODE) {
 
-        mxcfb_update_data *update = (mxcfb_update_data *)ptr;
-        MSGQ.send(*update);
-        return 0;
-      } else if (request == MXCFB_SET_AUTO_UPDATE_MODE) {
-
-        return 0;
-      } else if (request == MXCFB_WAIT_FOR_UPDATE_COMPLETE) {
+      return 0;
+    } else if (request == MXCFB_WAIT_FOR_UPDATE_COMPLETE) {
 #ifdef DEBUG
-        std::cerr << "CLIENT: sync" << std::endl;
+      std::cerr << "CLIENT: sync" << std::endl;
 #endif
-        return 0;
-      }
+      return 0;
+    }
 
-      else if (request == FBIOGET_VSCREENINFO) {
+    else if (request == FBIOGET_VSCREENINFO) {
 
-        fb_var_screeninfo *screeninfo = (fb_var_screeninfo *)ptr;
-        screeninfo->xres = swtfb::WIDTH;
-        screeninfo->yres = swtfb::HEIGHT;
-        screeninfo->grayscale = 0;
-        screeninfo->bits_per_pixel = 16;
-        screeninfo->xres_virtual = swtfb::WIDTH;
-        screeninfo->yres_virtual = swtfb::HEIGHT;
+      fb_var_screeninfo *screeninfo = (fb_var_screeninfo *)ptr;
+      screeninfo->xres = swtfb::WIDTH;
+      screeninfo->yres = swtfb::HEIGHT;
+      screeninfo->grayscale = 0;
+      screeninfo->bits_per_pixel = 8 * BYTES_PER_PIXEL;
+      screeninfo->xres_virtual = swtfb::WIDTH;
+      screeninfo->yres_virtual = swtfb::HEIGHT;
 
-        //set to RGB565
-        screeninfo->red.offset = 11;
-        screeninfo->red.length = 5;
-        screeninfo->green.offset = 5;
-        screeninfo->green.length = 6;
-        screeninfo->blue.offset = 0;
-        screeninfo->blue.length = 5;
-        return 0;
-      }
+      //set to RGB565
+      screeninfo->red.offset = 11;
+      screeninfo->red.length = 5;
+      screeninfo->green.offset = 5;
+      screeninfo->green.length = 6;
+      screeninfo->blue.offset = 0;
+      screeninfo->blue.length = 5;
+      return 0;
+    }
 
-      else if (request == FBIOPUT_VSCREENINFO) {
+    else if (request == FBIOPUT_VSCREENINFO) {
 
-        return 0;
-      } else if (request == FBIOGET_FSCREENINFO) {
+      return 0;
+    } else if (request == FBIOGET_FSCREENINFO) {
 
-        fb_fix_screeninfo *screeninfo = (fb_fix_screeninfo *)ptr;
-        screeninfo->smem_len = swtfb::ipc::BUF_SIZE;
-        screeninfo->smem_start = (unsigned long)SHARED_BUF;
-        screeninfo->line_length = swtfb::WIDTH * sizeof(uint16_t);
-        memcpy(screeninfo->id, FB_ID, sizeof(FB_ID));
-        screeninfo->id[sizeof(FB_ID)] = 0;
-        return 0;
-      } else {
-        std::cerr << "UNHANDLED IOCTL" << ' ' << request << std::endl;
-        return 0;
-      }
+      fb_fix_screeninfo *screeninfo = (fb_fix_screeninfo *)ptr;
+      screeninfo->smem_len = swtfb::ipc::BUF_SIZE;
+      screeninfo->smem_start = (unsigned long)SHARED_BUF;
+      screeninfo->line_length = swtfb::WIDTH * BYTES_PER_PIXEL;
+      constexpr char fb_id[] = "mxcfb";
+      memcpy(screeninfo->id, fb_id, sizeof(fb_id));
+      return 0;
+    } else {
+      std::cerr << "UNHANDLED IOCTL" << ' ' << request << std::endl;
+      return 0;
     }
   }
 
-  if (!func_ioctl) {
-    func_ioctl =
-        (int (*)(int, unsigned long request, ...))dlsym(RTLD_NEXT, "ioctl");
-  }
+  static auto func_ioctl =
+      (int (*)(int, unsigned long request, ...))dlsym(RTLD_NEXT, "ioctl");
 
   return func_ioctl(fd, request, ptr);
 }
 
-static const auto touchArgs = QByteArray("rotate=180:invertx");
-
 __attribute__((visibility("default")))
 bool _Z7qputenvPKcRK10QByteArray(const char *name, const QByteArray &val) {
-  static auto orig_fn = (bool (*)(const char *, const QByteArray &))dlsym(
+  static const auto touchArgs = QByteArray("rotate=180:invertx");
+  static const auto orig_fn = (bool (*)(const char *, const QByteArray &))dlsym(
       RTLD_NEXT, "_Z7qputenvPKcRK10QByteArray");
 
-  if (strcmp(name, "QT_QPA_EVDEV_TOUCHSCREEN_PARAMETERS") == 0) {
+  if (ON_RM2 && strcmp(name, "QT_QPA_EVDEV_TOUCHSCREEN_PARAMETERS") == 0) {
     return orig_fn(name, touchArgs);
   }
 
   return orig_fn(name, val);
 }
 
-void (*old_update)(void *, int, int, int, int, int, int) = 0;
-int (*old_create_threads)(const char *, void *) = 0;
-int (*old_wait)(void) = 0;
-int (*old_shutdown)(void) = 0;
 
-void new_update(void *instance, int x1, int y1, int x2, int y2, int waveform,
-                int flags) {
+void new_update(void*, int x1, int y1, int x2, int y2, int waveform, int flags) {
 #ifdef DEBUG
   std::cerr << "UPDATE HOOK CALLED" << std::endl;
   std::cerr << "x " << x1 << " " << x2 << std::endl;
@@ -238,22 +207,22 @@ void new_update(void *instance, int x1, int y1, int x2, int y2, int waveform,
   MSGQ.send(data);
 }
 
-int new_create_threads(const char *path, void *buf) {
+int new_create_threads(char*, void*) {
   std::cerr << "create threads called" << std::endl;
   return 0;
 }
 
-int new_wait(void) {
+int new_wait() {
   std::cerr << "wait clear func called" << std::endl;
   return 0;
 }
 
-int new_shutdown(void) {
+int new_shutdown() {
   std::cerr << "shutdown called" << std::endl;
   return 0;
 }
 
-static std::string readlink_string(const char* link_path) {
+std::string readlink_string(const char* link_path) {
   char buffer[PATH_MAX];
   ssize_t len = readlink(link_path, buffer, sizeof(buffer) - 1);
 
@@ -265,111 +234,103 @@ static std::string readlink_string(const char* link_path) {
   return buffer;
 }
 
-GumInterceptor *interceptor;
-
 __attribute__((visibility("default")))
 int __libc_start_main(int (*_main)(int, char **, char **), int argc,
                       char **argv, int (*init)(int, char **, char **),
                       void (*fini)(void), void (*rtld_fini)(void),
                       void *stack_end) {
 
-  auto binary_path = readlink_string("/proc/self/exe");
+  if (ON_RM2) {
+    auto binary_path = readlink_string("/proc/self/exe");
 
-  if (binary_path.empty()) {
-    std::cerr << "Unable to find current binary path\n";
-    return -1;
-  }
+    if (binary_path.empty()) {
+      std::cerr << "Unable to find current binary path\n";
+      return -1;
+    }
 
-  if (binary_path == "/usr/bin/xochitl") {
-    IN_XOCHITL = true;
+    if (binary_path == "/usr/bin/xochitl") {
+      IN_XOCHITL = true;
 
-    auto *update_fn = swtfb::locate_signature(
-        binary_path.c_str(), "\x54\x40\x8d\xe2\x10\x50\x8d\xe2", 8);
-    if (update_fn == nullptr) {
-      std::cerr << "Unable to find update fn" << std::endl;
-      std::cerr << "PLEASE SEE "
-                   "https://github.com/ddvk/remarkable2-framebuffer/issues/18"
+      auto *update_fn = swtfb::locate_signature(
+          binary_path.c_str(), "\x54\x40\x8d\xe2\x10\x50\x8d\xe2", 8);
+      if (update_fn == nullptr) {
+        std::cerr << "Unable to find update fn" << std::endl;
+        std::cerr << "PLEASE SEE "
+                    "https://github.com/ddvk/remarkable2-framebuffer/issues/18"
+                  << std::endl;
+        return -1;
+      }
+      update_fn -= 12;
+
+      auto *create_threads_fn = swtfb::locate_signature(
+          binary_path.c_str(), "\x00\x40\xa0\xe1\x10\x52\x9f\xe5\x6b\x0d\xa0\xe3", 12);
+      if (create_threads_fn == nullptr) {
+        std::cerr << "Unable to find create threads fn" << std::endl;
+        std::cerr << "PLEASE SEE "
+                    "https://github.com/ddvk/remarkable2-framebuffer/issues/18"
+                  << std::endl;
+        return -1;
+      }
+
+      auto *wait_fn = swtfb::locate_signature(
+          binary_path.c_str(), "\x01\x30\xa0\xe3\x30\x40\x9f\xe5", 8);
+      if (wait_fn == nullptr) {
+        std::cerr << "Unable to find wait threads fn" << std::endl;
+        std::cerr << "PLEASE SEE "
+                    "https://github.com/ddvk/remarkable2-framebuffer/issues/18"
+                  << std::endl;
+        return -1;
+      }
+
+      auto *shutdown_fn = swtfb::locate_signature(
+          binary_path.c_str(), "\x01\x50\xa0\xe3\x44\x40\x9f\xe5", 8);
+      if (shutdown_fn == nullptr) {
+        std::cerr << "Unable to find shutdown fn" << std::endl;
+        std::cerr << "PLEASE SEE "
+                    "https://github.com/ddvk/remarkable2-framebuffer/issues/18"
+                  << std::endl;
+        return -1;
+      }
+
+      std::cerr << "Update fn address: " << std::hex << (void *)update_fn
+                << "\nCreate th address: " << (void *)create_threads_fn
+                << "\nWait for th address: " << (void *)wait_fn
+                << "\nshutdown address: " << (void *)shutdown_fn << std::dec
                 << std::endl;
-      return -1;
-    }
-    update_fn -= 12;
 
-    auto *create_threads_fn = swtfb::locate_signature(
-        binary_path.c_str(), "\x00\x40\xa0\xe1\x10\x52\x9f\xe5\x6b\x0d\xa0\xe3", 12);
-    if (create_threads_fn == nullptr) {
-      std::cerr << "Unable to find create threads fn" << std::endl;
-      std::cerr << "PLEASE SEE "
-                   "https://github.com/ddvk/remarkable2-framebuffer/issues/18"
-                << std::endl;
-      return -1;
-    }
+      gum_init_embedded();
+      GumInterceptor *interceptor = gum_interceptor_obtain();
 
-    auto *wait_fn = swtfb::locate_signature(
-        binary_path.c_str(), "\x01\x30\xa0\xe3\x30\x40\x9f\xe5", 8);
-    if (wait_fn == nullptr) {
-      std::cerr << "Unable to find wait threads fn" << std::endl;
-      std::cerr << "PLEASE SEE "
-                   "https://github.com/ddvk/remarkable2-framebuffer/issues/18"
-                << std::endl;
-      return -1;
-    }
+      if (gum_interceptor_replace(interceptor, update_fn, (void *)new_update,
+                                  nullptr) != GUM_REPLACE_OK) {
+        std::cerr << "replace update fn error" << std::endl;
+        return -1;
+      }
 
-    auto *shutdown_fn = swtfb::locate_signature(
-        binary_path.c_str(), "\x01\x50\xa0\xe3\x44\x40\x9f\xe5", 8);
-    if (shutdown_fn == nullptr) {
-      std::cerr << "Unable to find shutdown fn" << std::endl;
-      std::cerr << "PLEASE SEE "
-                   "https://github.com/ddvk/remarkable2-framebuffer/issues/18"
-                << std::endl;
-      return -1;
-    }
+      if (gum_interceptor_replace(interceptor, create_threads_fn,
+                                  (void *)new_create_threads,
+                                  nullptr) != GUM_REPLACE_OK) {
+        std::cerr << "replace create threads fn error" << std::endl;
+        return -1;
+      }
 
-    std::cerr << "Update fn address: " << std::hex << (void *)update_fn
-              << "\nCreate th address: " << (void *)create_threads_fn
-              << "\nWait for th address: " << (void *)wait_fn
-              << "\nshutdown address: " << (void *)shutdown_fn << std::dec
-              << std::endl;
+      if (gum_interceptor_replace(interceptor, wait_fn, (void *)new_wait,
+                                  nullptr) != GUM_REPLACE_OK) {
+        std::cerr << "replace wait clear fn error" << std::endl;
+        return -1;
+      }
 
-    old_update = (decltype(old_update))update_fn;
-    old_create_threads = (decltype(old_create_threads))create_threads_fn;
-    old_wait = (decltype(old_wait))wait_fn;
-    old_shutdown = (decltype(old_shutdown))shutdown_fn;
-
-    gum_init_embedded();
-    interceptor = gum_interceptor_obtain();
-
-    if (gum_interceptor_replace(interceptor, update_fn, (void *)new_update,
-                                nullptr) != GUM_REPLACE_OK) {
-      std::cerr << "replace update fn error" << std::endl;
-      return -1;
-    }
-
-    if (gum_interceptor_replace(interceptor, create_threads_fn,
-                                (void *)new_create_threads,
-                                nullptr) != GUM_REPLACE_OK) {
-      std::cerr << "replace create threads fn error" << std::endl;
-      return -1;
-    }
-
-    if (gum_interceptor_replace(interceptor, wait_fn, (void *)new_wait,
-                                nullptr) != GUM_REPLACE_OK) {
-      std::cerr << "replace wait clear fn error" << std::endl;
-      return -1;
-    }
-
-    if (gum_interceptor_replace(interceptor, shutdown_fn, (void *)new_shutdown,
-                                nullptr) != GUM_REPLACE_OK) {
-      std::cerr << "replace shutdown fn error" << std::endl;
-      return -1;
+      if (gum_interceptor_replace(interceptor, shutdown_fn, (void *)new_shutdown,
+                                  nullptr) != GUM_REPLACE_OK) {
+        std::cerr << "replace shutdown fn error" << std::endl;
+        return -1;
+      }
     }
   }
 
-  typeof(&__libc_start_main) func_main =
+  auto func_main =
       (typeof(&__libc_start_main))dlsym(RTLD_NEXT, "__libc_start_main");
 
   return func_main(_main, argc, argv, init, fini, rtld_fini, stack_end);
 }
 };
-
-__attribute__((visibility("default")))
-int main() { (void)0; };
