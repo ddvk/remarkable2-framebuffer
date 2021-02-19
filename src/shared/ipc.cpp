@@ -30,6 +30,11 @@ struct xochitl_data {
   int waveform;
   int flags;
 };
+
+struct wait_sem_data {
+  char sem_name[512];
+};
+
 struct swtfb_update {
   long mtype;
 
@@ -37,6 +42,8 @@ struct swtfb_update {
     xochitl_data xochitl_update;
 
     struct mxcfb_update_data update;
+    wait_sem_data wait_update;
+
   };
 
 #ifdef DEBUG_TIMING
@@ -77,7 +84,7 @@ inline void mark_dirty(mxcfb_rect &dirty_area, mxcfb_rect &rect) {
 namespace ipc {
 
 using namespace std;
-enum MSG_TYPE { INIT_t = 1, UPDATE_t, XO_t };
+enum MSG_TYPE { INIT_t = 1, UPDATE_t, XO_t, WAIT_t };
 
 const int maxWidth = 1404;
 const int maxHeight = 1872;
@@ -122,6 +129,17 @@ public:
   void init() { msqid = msgget(id, IPC_CREAT | 0600); }
 
   Queue(int id) : id(id) { init(); }
+
+  void send(wait_sem_data data) {
+    swtfb_update msg;
+    msg.mtype = WAIT_t;
+    msg.wait_update = data;
+
+    int wrote = msgsnd(msqid, (void *)&msg, sizeof(swtfb_update), 0);
+    if (wrote != 0) {
+      perror("Error sending wait update");
+    }
+  }
 
   void send(xochitl_data data) {
     swtfb_update msg;
