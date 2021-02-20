@@ -3,6 +3,7 @@
 #include <libgen.h>
 #include <linux/fb.h>
 #include <linux/ioctl.h>
+#include <semaphore.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +11,7 @@
 #include <string>
 #include <fstream>
 #include <unistd.h>
+#include <time.h>
 
 #include <QByteArray>
 
@@ -17,6 +19,8 @@
 #include "../shared/signature.cpp"
 
 #include "frida/frida-gum.h"
+
+#define SEM_WAIT_TIMEOUT 200000000 /* 200 * 1000 * 1000, e.g. 200ms */
 
 constexpr auto msg_q_id = 0x2257c;
 swtfb::ipc::Queue MSGQ(msg_q_id);
@@ -127,6 +131,49 @@ int ioctl(int fd, unsigned long request, char *ptr) {
     } else if (request == MXCFB_WAIT_FOR_UPDATE_COMPLETE) {
 #ifdef DEBUG
       std::cerr << "CLIENT: sync" << std::endl;
+#endif
+
+      // for wait ioctl, we drop a WAIT_t message into the queue.  the server
+      // then uses that message to signal the semaphore we just opened. this
+      // can take as little as 0.5ms for small updates. one difference is that
+      // the ioctl now waits for all pending updates, not just the requested
+      // scheduled one.
+      swtfb::ClockWatch cz;
+      swtfb::wait_sem_data update;
+      std::string sem_name = std::string("/rm2fb.wait.");
+      sem_name += std::to_string(getpid());
+
+      memcpy(update.sem_name, sem_name.c_str(), sem_name.size());
+      update.sem_name[sem_name.size()] = 0;
+
+      MSGQ.send(update);
+
+      sem_t *sem = sem_open(update.sem_name, O_CREAT);
+      struct timespec timeout;
+      if (clock_gettime(CLOCK_REALTIME, &timeout) == -1) {
+        // Probably unnecessary fallback
+        timeout = {0, 0};
+#ifdef DEBUG
+        std::cerr << "clock_gettime failed" << std::endl;
+#endif
+      }
+
+      timeout.tv_nsec += SEM_WAIT_TIMEOUT;
+      if (timeout.tv_nsec >= 1e9) {
+        timeout.tv_nsec -= 1e9;
+        timeout.tv_sec++;
+      }
+
+      sem_timedwait(sem, &timeout);
+
+      // on linux, unlink will delete the semaphore once all processes using
+      // it are closed. the idea here is that the client removes the semaphore
+      // as soon as possible
+      // TODO: validate this assumption
+      sem_unlink(update.sem_name);
+
+#ifdef DEBUG
+      std::cerr << "FINISHED WAIT IOCTL " << cz.elapsed() << std::endl;
 #endif
       return 0;
     }

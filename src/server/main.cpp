@@ -16,6 +16,7 @@
 #include <dlfcn.h>
 #include <mutex>
 #include <stdint.h>
+#include <semaphore.h>
 #include <thread>
 
 #include <QCoreApplication>
@@ -144,6 +145,15 @@ int server_main(int, char **argv, char **) {
       fb.SendUpdate(rect, buf.xochitl_update.waveform,
                     buf.xochitl_update.flags);
     } break;
+    case ipc::WAIT_t: {
+      fb.WaitForLastUpdate();
+      sem_t* sem = sem_open(buf.wait_update.sem_name, O_CREAT, 0644, 0);
+      if (sem != NULL) {
+        sem_post(sem);
+        sem_close(sem);
+      }
+    } break;
+
     default:
       std::cerr << "Error, unknown message type" << std::endl;
     }
