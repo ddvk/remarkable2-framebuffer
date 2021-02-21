@@ -30,6 +30,7 @@ uint16_t *SHARED_BUF = nullptr;
 constexpr auto BYTES_PER_PIXEL = sizeof(*SHARED_BUF);
 
 bool IN_XOCHITL = false;
+bool DO_WAIT_IOCTL = true;
 bool ON_RM2 = false;
 
 extern "C" {
@@ -53,6 +54,10 @@ void init() {
         setenv("RM2FB_NESTED", "1", true);
     } else {
         setenv("RM2FB_ACTIVE", "1", true);
+    }
+
+    if (getenv("RM2FB_NO_WAIT_IOCTL") != nullptr) {
+      DO_WAIT_IOCTL = false;
     }
   }
 }
@@ -132,6 +137,10 @@ int ioctl(int fd, unsigned long request, char *ptr) {
 #ifdef DEBUG
       std::cerr << "CLIENT: sync" << std::endl;
 #endif
+
+      if (!DO_WAIT_IOCTL) {
+        return 0;
+      }
 
       // for wait ioctl, we drop a WAIT_t message into the queue.  the server
       // then uses that message to signal the semaphore we just opened. this
