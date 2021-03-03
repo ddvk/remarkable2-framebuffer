@@ -36,17 +36,17 @@ make
 
 ### Framebuffer Server
 
-build `src/server/librm2fb_server.so.1.0.0`.  Copy it to your
+build `src/server/librm2fb_server.so.1.0.1`.  Copy it to your
 remarkable and run:
 
 ```
-LD_PRELOAD=/path/to/librm2fb_server.so.1.0.0 /usr/bin/remarkable-shutdown
+LD_PRELOAD=/path/to/librm2fb_server.so.1.0.1 /usr/bin/remarkable-shutdown
 ```
 
 ### Framebuffer Client Shim
 
-build `src/client/librm2fb_client.so.1.0.0`.  Copy it to your
-remarkable and run: `LD_PRELOAD=/path/to/librm2fb_client.so.1.0.0 <rm1app>` to
+build `src/client/librm2fb_client.so.1.0.1`.  Copy it to your
+remarkable and run: `LD_PRELOAD=/path/to/librm2fb_client.so.1.0.1 <rm1app>` to
 run your app.
 
 The client intercepts interactions with `/dev/fb0` and forwards them to the
