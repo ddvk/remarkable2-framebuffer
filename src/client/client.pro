@@ -21,4 +21,6 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # Input
 SOURCES += main.cpp
 CONFIG += hide_symbols
+QT -= gui
+QMAKE_LFLAGS_RPATH=
 LIBS += -lrt -ldl frida/libfrida-gum.a -Wl,--exclude-libs,ALL
