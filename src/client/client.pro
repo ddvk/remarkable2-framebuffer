@@ -4,6 +4,7 @@
 
 TEMPLATE = lib
 TARGET = rm2fb_client
+VERSION = 1.0.1
 INCLUDEPATH += .
 
 # The following define makes your compiler warn you if you use any
