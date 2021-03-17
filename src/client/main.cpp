@@ -308,7 +308,7 @@ int __libc_start_main(int (*_main)(int, char **, char **), int argc,
       IN_XOCHITL = true;
 
       auto *update_fn = swtfb::locate_signature(
-          binary_path.c_str(), "\x54\x40\x8d\xe2\x10\x50\x8d\xe2", 8);
+          binary_path.c_str(), "\x00\xd0\x4d\xe2\x00\x40\x8d\xe2\x00\x50\x8d\xe2", 12);
       if (update_fn == nullptr) {
         std::cerr << "Unable to find update fn" << std::endl;
         std::cerr << "PLEASE SEE "
@@ -316,10 +316,10 @@ int __libc_start_main(int (*_main)(int, char **, char **), int argc,
                   << std::endl;
         return -1;
       }
-      update_fn -= 12;
+      update_fn -= 8;
 
       auto *create_threads_fn = swtfb::locate_signature(
-          binary_path.c_str(), "\x00\x40\xa0\xe1\x10\x52\x9f\xe5\x6b\x0d\xa0\xe3", 12);
+          binary_path.c_str(), "\x00\x40\xa0\xe1\x00\x52\x9f\xe5\x6b\x0d\xa0\xe3", 12);
       if (create_threads_fn == nullptr) {
         std::cerr << "Unable to find create threads fn" << std::endl;
         std::cerr << "PLEASE SEE "

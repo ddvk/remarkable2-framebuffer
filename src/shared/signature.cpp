@@ -40,7 +40,7 @@ char *locate_signature(const char *path, const char *find, int N) {
   for (int i = 0; i < size - N; i++) {
     found = true;
     for (int j = 0; j < N; j++) {
-      if (find[j] != data[i + j]) {
+      if (find[j] && find[j] != data[i + j]) {
         found = false;
         break;
       }
