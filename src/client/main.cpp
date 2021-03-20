@@ -298,21 +298,21 @@ struct Signature {
 };
 
 std::vector<Signature> S_UPDATE = {
-  { "\x54\x40\x8d\xe2\x10\x50\x8d\xe2", 8, 12 }
+    { "\x54\x40\x8d\xe2\x10\x50\x8d\xe2", 8, 12 }
   , { "\x4c\xd0\x4d\xe2\x18\x40\x8d\xe2", 8, 12 }
 };
 std::vector<Signature> S_CREATE = {
-  { "\x00\x40\xa0\xe1\x10\x52\x9f\xe5\x6b\x0d\xa0\xe3", 12, 0}
+    { "\x00\x40\xa0\xe1\x10\x52\x9f\xe5\x6b\x0d\xa0\xe3", 12, 0}
   , { "\x00\x40\xa0\xe1\x0c\x52\x9f\xe5\x6b\x0d\xa0\xe3", 12, 0}
 
 };
 
 std::vector<Signature> S_SHUTDOWN = {
-  { "\x01\x30\xa0\xe3\x30\x40\x9f\xe5", 8, 0 }
+    { "\x01\x30\xa0\xe3\x30\x40\x9f\xe5", 8, 0 }
 
 };
 std::vector<Signature> S_WAIT = {
-  { "\x01\x50\xa0\xe3\x44\x40\x9f\xe5", 8, 0 }
+    { "\x01\x50\xa0\xe3\x44\x40\x9f\xe5", 8, 0 }
 };
 
 // exits if it fails since we won't get far with xochitl
@@ -336,13 +336,13 @@ void replace_func(GumInterceptor* interceptor, const char* func_name, std::vecto
     exit(-1);
   }
 
+  std::cerr << "found " << func_name << " at " << std::hex << (int) fn << std::dec << std::endl;
   if (gum_interceptor_replace(interceptor, fn, (void *)new_func,
                               nullptr) != GUM_REPLACE_OK) {
     std::cerr << "replace " << func_name << " error" << std::endl;
     exit(-1);
   }
 
-  std::cerr << "found " << func_name << " at " << std::hex << (int) fn << std::dec << std::endl;
 }
 
 void intercept_xochitl() {
