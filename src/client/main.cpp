@@ -315,7 +315,9 @@ std::vector<Signature> S_WAIT = {
   { "\x01\x50\xa0\xe3\x44\x40\x9f\xe5", 8, 0 }
 };
 
-int replace_func(GumInterceptor* interceptor, const char* func_name, std::vector<Signature> sigs, void* new_func) {
+// exits if it fails since we won't get far with xochitl
+// without these funcs stubbed out
+void replace_func(GumInterceptor* interceptor, const char* func_name, std::vector<Signature> sigs, void* new_func) {
   auto binary_path = readlink_string("/proc/self/exe");
   char *fn = nullptr;
   for (auto sig : sigs) {
@@ -331,19 +333,16 @@ int replace_func(GumInterceptor* interceptor, const char* func_name, std::vector
     std::cerr << "PLEASE SEE "
                 "https://github.com/ddvk/remarkable2-framebuffer/issues/18"
               << std::endl;
-    return -1;
+    exit(-1);
   }
 
   if (gum_interceptor_replace(interceptor, fn, (void *)new_func,
                               nullptr) != GUM_REPLACE_OK) {
     std::cerr << "replace " << func_name << " error" << std::endl;
-    return -1;
+    exit(-1);
   }
 
   std::cerr << "found " << func_name << " at " << std::hex << (int) fn << std::dec << std::endl;
-
-
-  return 0;
 }
 
 void intercept_xochitl() {
