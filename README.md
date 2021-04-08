@@ -40,7 +40,7 @@ build `src/server/librm2fb_server.so.1.0.1`.  Copy it to your
 remarkable and run:
 
 ```
-LD_PRELOAD=/path/to/librm2fb_server.so.1.0.1 /usr/bin/remarkable-shutdown
+LD_PRELOAD=/path/to/librm2fb_server.so.1.0.1 /usr/bin/xochitl
 ```
 
 ### Framebuffer Client Shim
