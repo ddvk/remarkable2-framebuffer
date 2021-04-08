@@ -19,7 +19,9 @@
 #include "../shared/ipc.cpp"
 #include "../shared/signature.cpp"
 
+#ifndef NO_XOCHITL
 #include "frida/frida-gum.h"
+#endif
 
 #define SEM_WAIT_TIMEOUT 200000000 /* 200 * 1000 * 1000, e.g. 200ms */
 
@@ -291,6 +293,8 @@ std::string readlink_string(const char* link_path) {
   return buffer;
 }
 
+#ifndef NO_XOCHITL
+
 struct Signature {
   const char* bytes;
   int N;
@@ -380,4 +384,7 @@ int __libc_start_main(int (*_main)(int, char **, char **), int argc,
 
   return func_main(_main, argc, argv, init, fini, rtld_fini, stack_end);
 }
-};
+
+#endif // NO_XOCHITL
+
+} // extern "C"

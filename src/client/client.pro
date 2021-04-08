@@ -23,4 +23,8 @@ SOURCES += main.cpp
 CONFIG += hide_symbols
 QT -= gui
 QMAKE_LFLAGS_RPATH=
-LIBS += -lrt -ldl frida/libfrida-gum.a -Wl,--exclude-libs,ALL
+LIBS += -lrt -ldl -Wl,--exclude-libs,ALL
+
+!contains(DEFINES, NO_XOCHITL) {
+    LIBS += frida/libfrida-gum.a
+}
