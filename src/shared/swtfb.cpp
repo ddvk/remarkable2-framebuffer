@@ -17,7 +17,7 @@ using namespace std;
 
 namespace swtfb {
 
-string SDK_BIN = "/usr/bin/remarkable-shutdown";
+string SDK_BIN = "/usr/bin/xochitl";
 // todo: make it singleton
 class SwtFB {
   const int maxWidth = 1404;
