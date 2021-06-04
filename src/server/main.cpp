@@ -1,11 +1,11 @@
-﻿
-#include <fcntl.h>
+﻿#include <fcntl.h>
 
 #include "../shared/ipc.cpp"
 #include "../shared/swtfb.cpp"
 
 #include <linux/input.h>
 #include <sys/poll.h>
+#include <sys/prctl.h>
 #include <unistd.h>
 
 #ifndef _GNU_SOURCE
@@ -173,9 +173,13 @@ int __libc_start_main(int (*_main)(int, char **, char **), int argc,
   swtfb::SDK_BIN = argv[0];
   fprintf(stderr, "BIN FILE: %s\n", argv[0]);
 
+  // Since we preload the library in the Xochitl binary, the process will
+  // be called 'xochitl' by default. Change this to avoid confusing launchers
+  const char* proc_name = "rm2fb-server";
   size_t argv0_len = strlen(argv[0]);
-  strncpy(argv[0], "rm2fb-server", argv0_len);
+  strncpy(argv[0], proc_name, argv0_len);
   argv[0][argv0_len] = 0;
+  prctl(PR_SET_NAME, proc_name);
 
   return func_main(server_main, argc, argv, init, fini, rtld_fini, stack_end);
 };
