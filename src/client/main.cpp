@@ -295,42 +295,53 @@ std::string readlink_string(const char* link_path) {
 
 #ifndef NO_XOCHITL
 
-struct Signature {
-  const char* bytes;
-  int N;
-  int offset;
+const std::vector<swtfb::Signature> sigs_update = {
+  {
+    /* indirect = */ true,
+    /* bytes = */ {"\x18\x40\x8d\xe8\x0e\x00\x9c\xe8", 8},
+    /* offset = */ 8,
+  },
 };
 
-std::vector<Signature> S_UPDATE = {
-    { "\x54\x40\x8d\xe2\x10\x50\x8d\xe2", 8, 12 }
-  , { "\x4c\x40\x8d\xe2\x18\x50\x8d\xe2", 8, 12 }
+const std::vector<swtfb::Signature> sigs_create = {
+  {
+    /* indirect = */ false,
+    /* bytes = */ {"\x00\x40\xa0\xe1\x10\x52\x9f\xe5\x6b\x0d\xa0\xe3", 12},
+    /* offset = */ 0,
+  },
+  {
+    /* indirect = */ false,
+    /* bytes = */ {"\x00\x40\xa0\xe1\x0c\x52\x9f\xe5\x6b\x0d\xa0\xe3", 12},
+    /* offset = */ 0,
+  },
 };
-std::vector<Signature> S_CREATE = {
-    { "\x00\x40\xa0\xe1\x10\x52\x9f\xe5\x6b\x0d\xa0\xe3", 12, 0}
-  , { "\x00\x40\xa0\xe1\x0c\x52\x9f\xe5\x6b\x0d\xa0\xe3", 12, 0}
 
+const std::vector<swtfb::Signature> sigs_shutdown = {
+  {
+    /* indirect = */ false,
+    /* bytes = */ {"\x01\x30\xa0\xe3\x30\x40\x9f\xe5", 8},
+    /* offset = */ 0,
+  },
 };
 
-std::vector<Signature> S_SHUTDOWN = {
-    { "\x01\x30\xa0\xe3\x30\x40\x9f\xe5", 8, 0 }
-
-};
-std::vector<Signature> S_WAIT = {
-    { "\x01\x50\xa0\xe3\x44\x40\x9f\xe5", 8, 0 }
+const std::vector<swtfb::Signature> sigs_wait = {
+  {
+    /* indirect = */ false,
+    /* bytes = */ {"\x01\x50\xa0\xe3\x44\x40\x9f\xe5", 8},
+    /* offset = */ 0,
+  },
 };
 
 // exits if it fails since we won't get far with xochitl
 // without these funcs stubbed out
-void replace_func(GumInterceptor* interceptor, const char* func_name, std::vector<Signature> sigs, void* new_func) {
-  auto binary_path = readlink_string("/proc/self/exe");
-  char *fn = nullptr;
-  for (auto sig : sigs) {
-      fn = swtfb::locate_signature(binary_path.c_str(), sig.bytes, sig.N);
-      if (fn != nullptr) {
-        fn -= sig.offset;
-        break;
-      }
-  }
+void replace_func(
+  GumInterceptor* interceptor,
+  const char* func_name,
+  const std::string binary_data,
+  const std::vector<swtfb::Signature>& sigs,
+  void* new_func
+) {
+  void *fn = swtfb::locate_signature(binary_data, sigs);
 
   if (fn == nullptr) {
     std::cerr << "Unable to find " << func_name << std::endl;
@@ -341,8 +352,7 @@ void replace_func(GumInterceptor* interceptor, const char* func_name, std::vecto
   }
 
   std::cerr << "found " << func_name << " at " << std::hex << (int) fn << std::dec << std::endl;
-  if (gum_interceptor_replace(interceptor, fn, (void *)new_func,
-                              nullptr) != GUM_REPLACE_OK) {
+  if (gum_interceptor_replace(interceptor, fn, new_func, nullptr) != GUM_REPLACE_OK) {
     std::cerr << "replace " << func_name << " error" << std::endl;
     exit(-1);
   }
@@ -350,12 +360,14 @@ void replace_func(GumInterceptor* interceptor, const char* func_name, std::vecto
 }
 
 void intercept_xochitl() {
+  auto binary_path = readlink_string("/proc/self/exe");
+  auto binary_data = swtfb::read_file(binary_path);
   gum_init_embedded();
   GumInterceptor *interceptor = gum_interceptor_obtain();
-  replace_func(interceptor, "update_fn", S_UPDATE, (void*) new_update);
-  replace_func(interceptor, "create_fn", S_CREATE, (void*) new_create_threads);
-  replace_func(interceptor, "shutdown_fn", S_SHUTDOWN, (void*) new_shutdown);
-  replace_func(interceptor, "wait_fn", S_WAIT, (void*) new_wait);
+  replace_func(interceptor, "update_fn", binary_data, sigs_update, (void*) new_update);
+  replace_func(interceptor, "create_fn", binary_data, sigs_create, (void*) new_create_threads);
+  replace_func(interceptor, "shutdown_fn", binary_data, sigs_shutdown, (void*) new_shutdown);
+  replace_func(interceptor, "wait_fn", binary_data, sigs_wait, (void*) new_wait);
 }
 
 __attribute__((visibility("default")))

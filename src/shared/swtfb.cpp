@@ -30,8 +30,12 @@ public:
   }
 
   void setFunc() {
-    int *addr =
-        (int *)locate_signature(SDK_BIN.c_str(), "|@\x9f\xe5|P\x9f\xe5", 8);
+    auto data = swtfb::read_file(SDK_BIN);
+    void *addr = locate_signature(data, {
+      /* indirect = */ false,
+      /* bytes = */ {"|@\x9f\xe5|P\x9f\xe5", 8},
+      /* offset = */ 0,
+    });
     if (addr != 0) {
       f_getInstance = (uint32_t * (*)(void)) addr;
       fprintf(stderr, "ADDR: %x\n", addr);
