@@ -170,9 +170,6 @@ int __libc_start_main(int (*_main)(int, char **, char **), int argc,
   typeof(&__libc_start_main) func_main =
       (typeof(&__libc_start_main))dlsym(RTLD_NEXT, "__libc_start_main");
 
-  swtfb::SDK_BIN = argv[0];
-  fprintf(stderr, "BIN FILE: %s\n", argv[0]);
-
   // Since we preload the library in the Xochitl binary, the process will
   // be called 'xochitl' by default. Change this to avoid confusing launchers
   const char* proc_name = "rm2fb-server";

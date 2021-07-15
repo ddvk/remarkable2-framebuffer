@@ -5,3 +5,4 @@ Makefile
 rm2-framebuffer
 *.so.*
 *.so
+dist

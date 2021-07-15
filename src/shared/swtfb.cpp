@@ -11,13 +11,12 @@
 
 #include "now.cpp"
 #include "qtdump.cpp"
-#include "signature.cpp"
+#include "offsets.h"
 
 using namespace std;
 
 namespace swtfb {
 
-string SDK_BIN = "/usr/bin/xochitl";
 // todo: make it singleton
 class SwtFB {
   const int maxWidth = 1404;
@@ -30,22 +29,17 @@ public:
   }
 
   void setFunc() {
-    auto data = swtfb::read_file(SDK_BIN);
-    void *addr = locate_signature(data, {
-      /* indirect = */ false,
-      /* bytes = */ {"|@\x9f\xe5|P\x9f\xe5", 8},
-      /* offset = */ 0,
-    });
-    if (addr != 0) {
-      f_getInstance = (uint32_t * (*)(void)) addr;
-      fprintf(stderr, "ADDR: %x\n", addr);
-    } else {
-      fprintf(stderr, "COULDNT LOCATE SIGNATURE IN %s\n", SDK_BIN.c_str());
-      fprintf(stderr,
-              "PLEASE SEE "
-              "https://github.com/ddvk/remarkable2-framebuffer/issues/18\n");
-      exit(0);
+    const auto offsets = read_offsets();
+    auto search = offsets.find("getInstance");
+
+    if (search == offsets.end()) {
+      std::cerr << "No offset defined for function 'getInstance'\n"
+        "PLEASE SEE https://github.com/ddvk/remarkable2-framebuffer/issues/18\n";
+      std::exit(-1);
     }
+
+    f_getInstance = (uint32_t * (*)(void)) search->second;
+    std::cerr << "getInstance() at address: " << search->second;
   }
 
   void initQT() {

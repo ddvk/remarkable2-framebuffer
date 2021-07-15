@@ -17,7 +17,7 @@
 #include <QByteArray>
 
 #include "../shared/ipc.cpp"
-#include "../shared/signature.cpp"
+#include "../shared/offsets.h"
 
 #ifndef NO_XOCHITL
 #include "frida/frida-gum.h"
@@ -295,79 +295,41 @@ std::string readlink_string(const char* link_path) {
 
 #ifndef NO_XOCHITL
 
-const std::vector<swtfb::Signature> sigs_update = {
-  {
-    /* indirect = */ true,
-    /* bytes = */ {"\x18\x40\x8d\xe8\x0e\x00\x9c\xe8", 8},
-    /* offset = */ 8,
-  },
-};
-
-const std::vector<swtfb::Signature> sigs_create = {
-  {
-    /* indirect = */ false,
-    /* bytes = */ {"\x00\x40\xa0\xe1\x10\x52\x9f\xe5\x6b\x0d\xa0\xe3", 12},
-    /* offset = */ 0,
-  },
-  {
-    /* indirect = */ false,
-    /* bytes = */ {"\x00\x40\xa0\xe1\x0c\x52\x9f\xe5\x6b\x0d\xa0\xe3", 12},
-    /* offset = */ 0,
-  },
-};
-
-const std::vector<swtfb::Signature> sigs_shutdown = {
-  {
-    /* indirect = */ false,
-    /* bytes = */ {"\x01\x30\xa0\xe3\x30\x40\x9f\xe5", 8},
-    /* offset = */ 0,
-  },
-};
-
-const std::vector<swtfb::Signature> sigs_wait = {
-  {
-    /* indirect = */ false,
-    /* bytes = */ {"\x01\x50\xa0\xe3\x44\x40\x9f\xe5", 8},
-    /* offset = */ 0,
-  },
-};
-
 // exits if it fails since we won't get far with xochitl
 // without these funcs stubbed out
 void replace_func(
   GumInterceptor* interceptor,
-  const char* func_name,
-  const std::string binary_data,
-  const std::vector<swtfb::Signature>& sigs,
+  const std::map<std::string, void*>& offsets,
+  std::string func_name,
   void* new_func
 ) {
-  void *fn = swtfb::locate_signature(binary_data, sigs);
+  auto search = offsets.find(func_name);
 
-  if (fn == nullptr) {
-    std::cerr << "Unable to find " << func_name << std::endl;
-    std::cerr << "PLEASE SEE "
-                "https://github.com/ddvk/remarkable2-framebuffer/issues/18"
-              << std::endl;
-    exit(-1);
+  if (search == offsets.end()) {
+    std::cerr << "No offset defined for function '" << func_name << "'\n"
+      "PLEASE SEE https://github.com/ddvk/remarkable2-framebuffer/issues/18\n";
+    std::exit(-1);
   }
 
-  std::cerr << "found " << func_name << " at " << std::hex << (int) fn << std::dec << std::endl;
-  if (gum_interceptor_replace(interceptor, fn, new_func, nullptr) != GUM_REPLACE_OK) {
-    std::cerr << "replace " << func_name << " error" << std::endl;
-    exit(-1);
-  }
+  std::cerr << "Replacing '" << func_name << "' (at " << search->second << "): ";
 
+  if (gum_interceptor_replace(
+        interceptor, search->second, new_func, nullptr) != GUM_REPLACE_OK) {
+    std::cerr << "ERR\n";
+    std::exit(-1);
+  } else {
+    std::cerr << "OK\n";
+  }
 }
 
 void intercept_xochitl() {
-  auto binary_path = readlink_string("/proc/self/exe");
-  auto binary_data = swtfb::read_file(binary_path);
+  const auto offsets = read_offsets();
   gum_init_embedded();
   GumInterceptor *interceptor = gum_interceptor_obtain();
-  replace_func(interceptor, "update_fn", binary_data, sigs_update, (void*) new_update);
-  replace_func(interceptor, "create_fn", binary_data, sigs_create, (void*) new_create_threads);
-  replace_func(interceptor, "shutdown_fn", binary_data, sigs_shutdown, (void*) new_shutdown);
-  replace_func(interceptor, "wait_fn", binary_data, sigs_wait, (void*) new_wait);
+  replace_func(interceptor, offsets, "update", (void*) new_update);
+  replace_func(interceptor, offsets, "create", (void*) new_create_threads);
+  replace_func(interceptor, offsets, "shutdown", (void*) new_shutdown);
+  replace_func(interceptor, offsets, "wait", (void*) new_wait);
 }
 
 __attribute__((visibility("default")))
@@ -387,7 +349,6 @@ int __libc_start_main(int (*_main)(int, char **, char **), int argc,
     if (binary_path == "/usr/bin/xochitl") {
       IN_XOCHITL = true;
       intercept_xochitl();
-
     }
   }
 

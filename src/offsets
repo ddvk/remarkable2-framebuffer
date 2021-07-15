@@ -1,0 +1,13 @@
+# remarkable2-framebuffer offsets file
+#
+# This file contains the addresses of functions in the Xochitl binary used or
+# replaced by the rm2fb client and server. It contains a series of blocks, one
+# per supported OS release.
+
+# 2.9.0.153
+!20210709092503
+update 0x3aa5c4
+create 0x3ac9d8
+shutdown 0x3ac97c
+wait 0x3abefc
+getInstance 0x3a0e7c
