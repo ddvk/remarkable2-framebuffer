@@ -4,6 +4,54 @@
 # replaced by the rm2fb client and server. It contains a series of blocks, one
 # per supported OS release.
 
+# 2.4.0.27
+!20201016123042
+# TODO
+
+# 2.4.1.30
+!20201028163830
+# TODO
+
+# 2.5.0.27
+!20201127104549
+update 0x2c050c
+create 0x2c2798
+shutdown 0x2c273c
+wait 0x2c1fd4
+getInstance 0x2c0a2c
+
+# 2.5.1.45
+!20201216142449
+# TODO
+
+# 2.6.1.71
+!20210311194323
+update 0x311c10
+create 0x314178
+shutdown 0x31411c
+wait 0x31369c
+getInstance 0x312128
+
+# 2.6.2.75
+!20210322075357
+# TODO
+
+# 2.7.0.51
+!20210504114631
+# TODO
+
+# 2.7.1.53
+!20210511153632
+# TODO
+
+# 2.8.0.98
+!20210611153600
+update 0x3426ac
+create 0x344c18
+shutdown 0x344bbc
+wait 0x34413c
+getInstance 0x342bc8
+
 # 2.9.0.153
 !20210709092503
 update 0x3aa5c4
