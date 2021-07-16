@@ -6,11 +6,19 @@
 
 # 2.4.0.27
 !20201016123042
-# TODO
+update 0x2b2534
+create 0x2b47c0
+shutdown 0x2b4764
+wait 0x2b3ffc
+getInstance 0x2b2a54
 
 # 2.4.1.30
 !20201028163830
-# TODO
+update 0x2b255c
+create 0x2b47e8
+shutdown 0x2b478c
+wait 0x2b4024
+getInstance 0x2b2a7c
 
 # 2.5.0.27
 !20201127104549
@@ -20,9 +28,13 @@ shutdown 0x2c273c
 wait 0x2c1fd4
 getInstance 0x2c0a2c
 
-# 2.5.1.45
+# 2.5.1.47
 !20201216142449
-# TODO
+update 0x2c0664
+create 0x2c28f0
+shutdown 0x2c2894
+wait 0x2c212c
+getInstance 0x2c0b84
 
 # 2.6.1.71
 !20210311194323
