@@ -34,15 +34,27 @@ getInstance 0x312128
 
 # 2.6.2.75
 !20210322075357
-# TODO
+update 0x311c00
+create 0x314168
+shutdown 0x31410c
+wait 0x31368c
+getInstance 0x312118
 
 # 2.7.0.51
 !20210504114631
-# TODO
+update 0x32373c
+create 0x325ca8
+shutdown 0x325c4c
+wait 0x3251cc
+getInstance 0x323c54
 
 # 2.7.1.53
 !20210511153632
-# TODO
+update 0x32373c
+create 0x325ca8
+shutdown 0x325c4c
+wait 0x3251cc
+getInstance 0x323c54
 
 # 2.8.0.98
 !20210611153600
