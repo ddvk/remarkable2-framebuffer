@@ -39,7 +39,7 @@ public:
     }
 
     f_getInstance = (uint32_t * (*)(void)) search->second;
-    std::cerr << "getInstance() at address: " << search->second;
+    std::cerr << "getInstance() at address: " << search->second << '\n';
   }
 
   void initQT() {
