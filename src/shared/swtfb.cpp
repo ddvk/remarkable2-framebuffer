@@ -11,7 +11,7 @@
 
 #include "now.cpp"
 #include "qtdump.cpp"
-#include "offsets.h"
+#include "config.h"
 
 using namespace std;
 
@@ -23,23 +23,24 @@ class SwtFB {
   const int maxHeight = 1872;
 
 public:
-  SwtFB() {
+  SwtFB()
+  : config(read_config()) {
     setFunc();
     initQT();
   }
 
   void setFunc() {
-    const auto offsets = read_offsets();
-    auto search = offsets.find("getInstance");
+    auto search = config.find("getInstance");
 
-    if (search == offsets.end()) {
-      std::cerr << "No offset defined for function 'getInstance'\n"
+    if (search == config.end()) {
+      std::cerr << "Missing address for function 'getInstance'\n"
         "PLEASE SEE https://github.com/ddvk/remarkable2-framebuffer/issues/18\n";
       std::exit(-1);
     }
 
-    f_getInstance = (uint32_t * (*)(void)) search->second;
-    std::cerr << "getInstance() at address: " << search->second << '\n';
+    void* address = std::get<void*>(search->second);
+    f_getInstance = (uint32_t * (*)(void)) address;
+    std::cerr << "getInstance() at address: " << address << '\n';
   }
 
   void initQT() {
@@ -122,6 +123,7 @@ private:
   QObject *instance;
   QGuiApplication *app;
   QImage *img;
+  Config config;
 
   uint32_t *(*f_getInstance)(void) = (uint32_t * (*)(void))0;
   void (*f_sendUpdate)(void *, ...) = (void (*)(void *, ...))0;

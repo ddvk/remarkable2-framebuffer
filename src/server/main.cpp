@@ -128,7 +128,7 @@ void _ZN6QImageC1EiiNS_6FormatE(void *that, int x, int y, int f) {
   qImageCtor(that, x, y, f);
 }
 
-int server_main(int, char **argv, char **) {
+int server_main(int, char **, char **) {
   SwtFB fb;
 
   printf("WAITING FOR SEND UPDATE ON MSG Q\n");
@@ -160,15 +160,15 @@ int server_main(int, char **argv, char **) {
   }
 }
 
-int __libc_start_main(int (*_main)(int, char **, char **), int argc,
+int __libc_start_main(int (*)(int, char **, char **), int argc,
                       char **argv, int (*init)(int, char **, char **),
                       void (*fini)(void), void (*rtld_fini)(void),
                       void *stack_end) {
 
   printf("STARTING RM2FB\n");
 
-  typeof(&__libc_start_main) func_main =
-      (typeof(&__libc_start_main))dlsym(RTLD_NEXT, "__libc_start_main");
+  auto func_main =
+      (decltype(&__libc_start_main))dlsym(RTLD_NEXT, "__libc_start_main");
 
   // Since we preload the library in the Xochitl binary, the process will
   // be called 'xochitl' by default. Change this to avoid confusing launchers
