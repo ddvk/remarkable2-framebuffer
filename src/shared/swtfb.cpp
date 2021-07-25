@@ -11,41 +11,36 @@
 
 #include "now.cpp"
 #include "qtdump.cpp"
-#include "signature.cpp"
+#include "config.h"
 
 using namespace std;
 
 namespace swtfb {
 
-string SDK_BIN = "/usr/bin/xochitl";
 // todo: make it singleton
 class SwtFB {
   const int maxWidth = 1404;
   const int maxHeight = 1872;
 
 public:
-  SwtFB() {
+  SwtFB()
+  : config(read_config()) {
     setFunc();
     initQT();
   }
 
   void setFunc() {
-    auto data = swtfb::read_file(SDK_BIN);
-    void *addr = locate_signature(data, {
-      /* indirect = */ false,
-      /* bytes = */ {"|@\x9f\xe5|P\x9f\xe5", 8},
-      /* offset = */ 0,
-    });
-    if (addr != 0) {
-      f_getInstance = (uint32_t * (*)(void)) addr;
-      fprintf(stderr, "ADDR: %x\n", addr);
-    } else {
-      fprintf(stderr, "COULDNT LOCATE SIGNATURE IN %s\n", SDK_BIN.c_str());
-      fprintf(stderr,
-              "PLEASE SEE "
-              "https://github.com/ddvk/remarkable2-framebuffer/issues/18\n");
-      exit(0);
+    auto search = config.find("getInstance");
+
+    if (search == config.end()) {
+      std::cerr << "Missing address for function 'getInstance'\n"
+        "PLEASE SEE https://github.com/ddvk/remarkable2-framebuffer/issues/18\n";
+      std::exit(-1);
     }
+
+    void* address = std::get<void*>(search->second);
+    f_getInstance = (uint32_t * (*)(void)) address;
+    std::cerr << "getInstance() at address: " << address << '\n';
   }
 
   void initQT() {
@@ -128,6 +123,7 @@ private:
   QObject *instance;
   QGuiApplication *app;
   QImage *img;
+  Config config;
 
   uint32_t *(*f_getInstance)(void) = (uint32_t * (*)(void))0;
   void (*f_sendUpdate)(void *, ...) = (void (*)(void *, ...))0;

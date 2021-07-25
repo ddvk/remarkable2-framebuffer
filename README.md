@@ -52,8 +52,32 @@ run your app.
 The client intercepts interactions with `/dev/fb0` and forwards them to the
 rm2fb server.
 
-## [Demo](https://imgur.com/gallery/zGMn7Qs)
+## Configuration
 
+To do their job, both the client and the server need to know the address at which a number of functions reside in the Xochitl binary.
+These addresses change from one release to the next.
+
+Xochitl function name | Xochitl function role | Notes
+--------------|---------------|----------
+`update` | Sends an update request. This function is replaced by the client shim to talk to our server instead. | Uses the string `Unable to complete update: invalid waveform (`. Prior to version 2.9, the signature of this function was `void (*)(void*, int, int, int, int, int, int)`. Starting from version 2.9, it changed to `void (*)(void*, QRect&, int, int)`.
+`create` | Start the threads that handle update requests. This function is replaced by the client shim with a no-op to avoid conflicting with the server. | Uses the string `Unable to start generator thread\n`.
+`wait` | Waits until the update-handling threads have started. This function is replaced by the client shim with a no-op to avoid conflicting with the server. | Calls `usleep(1000)`.
+`shutdown` | Stops the update-handling threads. This function is replaced by the client shim with a no-op to avoid conflicting with the server. | Uses the string `Shutting down...`.
+`getInstance` | Retrieves the instance of the singleton SWTCON class. This function is used by the server to interact with the screen. | Calls a function that itself calls `create` and `wait`.
+
+The client and the server both ship the [hardcoded addresses](https://github.com/ddvk/remarkable2-framebuffer/blob/master/src/shared/config.cpp#L13) for these functions for various releases.
+If you get a message saying `Missing address for function […]`, it means that the release you’re running is not yet supported. Please report this in [this dedicated thread](https://github.com/ddvk/remarkable2-framebuffer/issues/18).
+
+You can manually locate the addresses of the functions listed above by looking at the disassembly and then add a configuration entry to make remarkable2-framebuffer work with your release.
+In addition to the hardcoded configuration entries, the client and the server will look for addresses in configuration files in the following locations:
+
+* `/usr/share/rm2fb.conf`
+* `/opt/share/rm2fb.conf`
+* `/etc/rm2fb.conf`
+* `/opt/etc/rm2fb.conf` (best option for Toltec users)
+* `rm2fb.conf` (relative to the current working directory, best option for manual installs)
+
+## [Demo](https://imgur.com/gallery/zGMn7Qs)
 
 ## Contributing
 
@@ -66,6 +90,7 @@ Things that can use help:
 * testing apps and packages
 * understanding the waveforms used by SWTCON
 * writing our own implementation of SWTCON
+* adding support for new OS releases
 
 ## FAQ
 

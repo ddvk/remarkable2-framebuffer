@@ -56,15 +56,15 @@ int main(int, char **, char **) {
   printf("END of our main\n");
 }
 
-int __libc_start_main(int (*_main)(int, char **, char **), int argc,
+int __libc_start_main(int (*)(int, char **, char **), int argc,
                       char **argv, int (*init)(int, char **, char **),
                       void (*fini)(void), void (*rtld_fini)(void),
                       void *stack_end) {
 
   printf("LIBC START HOOK\n");
 
-  typeof(&__libc_start_main) func_main =
-      (typeof(&__libc_start_main))dlsym(RTLD_NEXT, "__libc_start_main");
+  auto func_main =
+      (decltype(&__libc_start_main))dlsym(RTLD_NEXT, "__libc_start_main");
 
   return func_main(main, argc, argv, init, fini, rtld_fini, stack_end);
 };
