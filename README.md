@@ -13,6 +13,8 @@ to use, allowing rM1 apps to seamlessly draw to the display of the rM2.
 
 ## Installation
 
+Before installing, be sure that your xochitl version is supported: https://github.com/ddvk/remarkable2-framebuffer/blob/master/src/shared/config.cpp.
+
 rm2fb is available as a package in [toltec](https://github.com/toltec-dev/toltec) which
 sets up the server and client parts for you. Otherwise, the instructions below can be used
 for manual installation.
