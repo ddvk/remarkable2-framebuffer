@@ -40,6 +40,7 @@ bool ON_RM2 = false;
 extern "C" {
 
 __attribute__((constructor))
+__attribute__((visibility("default")))
 void init() {
   std::ios_base::Init i;
 
