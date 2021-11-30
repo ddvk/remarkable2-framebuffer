@@ -173,8 +173,8 @@ int ioctl(int fd, unsigned long request, char *ptr) {
 
       timeout.tv_nsec += SEM_WAIT_TIMEOUT;
       // Move overflow ns to secs
-      timeout.tv_sec += timeout.tv_nsec / (uint64_t) 1e9;
-      timeout.tv_nsec %= (uint64_t) 1e9;
+      timeout.tv_sec += timeout.tv_nsec / (long) 1e9;
+      timeout.tv_nsec %= (long) 1e9;
 
       sem_timedwait(sem, &timeout);
 
