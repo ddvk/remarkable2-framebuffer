@@ -166,7 +166,7 @@ getInstance addr 0x3a041c
 
 !20211208075454
 version str 2.11.0.442
-update addr 0x3a9c28
+update addr 0x3a9cdc
 updateType str QRect
 create addr 0x3ac134
 shutdown addr 0x3ac0d8
