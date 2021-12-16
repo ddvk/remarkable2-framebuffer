@@ -163,8 +163,6 @@ create addr 0x3ac124
 shutdown addr 0x3ac0c8
 wait addr 0x3ab604
 getInstance addr 0x3a041c
-<<<<<<< HEAD
-=======
 
 !20211208075454
 version str 2.11.0.442
@@ -174,7 +172,6 @@ create addr 0x3ac134
 shutdown addr 0x3ac0d8
 wait addr 0x3ab614
 getInstance addr 0x3a042c
->>>>>>> 6f578a04e59a88f5f392ab9e37dd92a4b3e2ea18
 )CONF";
 
 void read_config_file(
