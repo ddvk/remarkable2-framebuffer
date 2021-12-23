@@ -161,7 +161,7 @@ int ioctl(int fd, unsigned long request, char *ptr) {
 
       MSGQ.send(update);
 
-      sem_t *sem = sem_open(update.sem_name, O_CREAT);
+      sem_t *sem = sem_open(update.sem_name, O_CREAT, 0644, 0);
       struct timespec timeout;
       if (clock_gettime(CLOCK_REALTIME, &timeout) == -1) {
         // Probably unnecessary fallback
