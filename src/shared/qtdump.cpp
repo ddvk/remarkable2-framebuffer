@@ -7,7 +7,7 @@
 #include <QDebug>
 
 void dump_qtClass(void* ptr) {
-  printf("INSTANCE ADDRESS: 0x%lx\n", ptr);
+  printf("INSTANCE ADDRESS: 0x%lx\n", (long unsigned int)ptr);
   QObject *object = static_cast<QObject *>((QObject*) ptr);
   const QMetaObject *meta = object->metaObject();
   qDebug() << meta->className();
