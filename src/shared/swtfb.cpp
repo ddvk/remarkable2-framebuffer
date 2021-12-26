@@ -24,23 +24,21 @@ class SwtFB {
 
 public:
   SwtFB()
-  : config(read_config()) {
-    setFunc();
-    initQT();
-  }
+  : config(read_config()) {}
 
-  void setFunc() {
+  bool setFunc() {
     auto search = config.find("getInstance");
 
     if (search == config.end()) {
       std::cerr << "Missing address for function 'getInstance'\n"
         "PLEASE SEE https://github.com/ddvk/remarkable2-framebuffer/issues/18\n";
-      std::exit(-1);
+      return false;
     }
 
     void* address = std::get<void*>(search->second);
     f_getInstance = (uint32_t * (*)(void)) address;
     std::cerr << "getInstance() at address: " << address << '\n';
+    return true;
   }
 
   void initQT() {
