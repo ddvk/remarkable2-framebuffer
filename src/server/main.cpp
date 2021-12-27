@@ -21,6 +21,7 @@
 
 #include <QCoreApplication>
 #include <QTouchEvent>
+#include <systemd/sd-daemon.h>
 
 using namespace swtfb;
 
@@ -106,8 +107,6 @@ static void (*qImageCtorWithBuffer)(void *that, uint8_t *, int32_t x, int32_t y,
 
 static void _libhook_init() __attribute__((constructor));
 static void _libhook_init() {
-  shared_mem = ipc::get_shared_buffer();
-
   qImageCtor = (void (*)(void *, int, int, int))dlsym(
       RTLD_NEXT, "_ZN6QImageC1EiiNS_6FormatE");
   qImageCtorWithBuffer = (void (*)(
@@ -131,7 +130,16 @@ void _ZN6QImageC1EiiNS_6FormatE(void *that, int x, int y, int f) {
 int server_main(int, char **, char **) {
   SwtFB fb;
 
-  printf("WAITING FOR SEND UPDATE ON MSG Q\n");
+  if (!fb.setFunc()) {
+    return 255;
+  }
+
+  shared_mem = ipc::get_shared_buffer();
+  fb.initQT();
+
+  fprintf(stderr, "WAITING FOR SEND UPDATE ON MSG Q\n");
+  sd_notify(0, "READY=1");
+
   while (true) {
     auto buf = MSGQ.recv();
     switch (buf.mtype) {
@@ -158,6 +166,7 @@ int server_main(int, char **, char **) {
       std::cerr << "Error, unknown message type" << std::endl;
     }
   }
+  return 0;
 }
 
 int __libc_start_main(int (*)(int, char **, char **), int argc,
