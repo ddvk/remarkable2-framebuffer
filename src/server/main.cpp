@@ -33,7 +33,7 @@ const int BYTES_PER_PIXEL = sizeof(uint16_t);
 uint16_t *shared_mem;
 
 void doUpdate(SwtFB &fb, const swtfb_update &s) {
-  auto mxcfb_update = s.update;
+  auto mxcfb_update = s.mdata.update;
   auto rect = mxcfb_update.update_region;
 
 #ifdef DEBUG_DIRTY
@@ -147,15 +147,15 @@ int server_main(int, char **, char **) {
       doUpdate(fb, buf);
       break;
     case ipc::XO_t: {
-      int width = buf.xochitl_update.x2 - buf.xochitl_update.x1 + 1;
-      int height = buf.xochitl_update.y2 - buf.xochitl_update.y1 + 1;
-      QRect rect(buf.xochitl_update.x1, buf.xochitl_update.y1, width, height);
-      fb.SendUpdate(rect, buf.xochitl_update.waveform,
-                    buf.xochitl_update.flags);
+      const xochitl_data& data = buf.mdata.xochitl_update;
+      int width = data.x2 - data.x1 + 1;
+      int height = data.y2 - data.y1 + 1;
+      QRect rect(data.x1, data.y1, width, height);
+      fb.SendUpdate(rect, data.waveform, data.flags);
     } break;
     case ipc::WAIT_t: {
       fb.WaitForLastUpdate();
-      sem_t* sem = sem_open(buf.wait_update.sem_name, O_CREAT, 0644, 0);
+      sem_t* sem = sem_open(buf.mdata.wait_update.sem_name, O_CREAT, 0644, 0);
       if (sem != NULL) {
         sem_post(sem);
         sem_close(sem);

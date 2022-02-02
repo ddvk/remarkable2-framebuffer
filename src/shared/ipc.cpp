@@ -37,18 +37,19 @@ struct wait_sem_data {
 
 struct swtfb_update {
   long mtype;
+  struct {
+    union {
+      xochitl_data xochitl_update;
 
-  union {
-    xochitl_data xochitl_update;
+      struct mxcfb_update_data update;
+      wait_sem_data wait_update;
 
-    struct mxcfb_update_data update;
-    wait_sem_data wait_update;
-
-  };
+    };
 
 #ifdef DEBUG_TIMING
-  uint64_t ms;
+    uint64_t ms;
 #endif
+  } mdata;
 };
 
 const int WIDTH = 1404;
@@ -133,9 +134,9 @@ public:
   void send(wait_sem_data data) {
     swtfb_update msg;
     msg.mtype = WAIT_t;
-    msg.wait_update = data;
+    msg.mdata.wait_update = data;
 
-    int wrote = msgsnd(msqid, (void *)&msg, sizeof(swtfb_update), 0);
+    int wrote = msgsnd(msqid, (void *)&msg, sizeof(msg.mdata.wait_update), 0);
     if (wrote != 0) {
       perror("Error sending wait update");
     }
@@ -144,9 +145,9 @@ public:
   void send(xochitl_data data) {
     swtfb_update msg;
     msg.mtype = XO_t;
-    msg.xochitl_update = data;
+    msg.mdata.xochitl_update = data;
 
-    int wrote = msgsnd(msqid, (void *)&msg, sizeof(swtfb_update), 0);
+    int wrote = msgsnd(msqid, (void *)&msg, sizeof(msg.mdata.xochitl_update), 0);
     if (wrote != 0) {
       perror("Error sending xochitl update");
     }
@@ -162,12 +163,12 @@ public:
 
     swtfb_update swtfb_msg;
     swtfb_msg.mtype = UPDATE_t;
-    swtfb_msg.update = msg;
+    swtfb_msg.mdata.update = msg;
 
 #ifdef DEBUG_TIMING
     swtfb_msg.ms = get_now();
 #endif
-    int wrote = msgsnd(msqid, (void *)&swtfb_msg, sizeof(swtfb_msg), 0);
+    int wrote = msgsnd(msqid, (void *)&swtfb_msg, sizeof(swtfb_msg.mdata.update), 0);
     if (wrote != 0) {
       cerr << "ERRNO " << errno << endl;
     }
@@ -176,7 +177,7 @@ public:
   swtfb_update recv() {
     swtfb_update buf;
     errno = 0;
-    auto len = msgrcv(msqid, &buf, sizeof(buf), 0, 0);
+    auto len = msgrcv(msqid, &buf, sizeof(buf.mdata), 0, MSG_NOERROR);
 #ifdef DEBUG_TIMING
     auto rect = buf.update.update_region;
     cerr << get_now() - buf.ms << "ms MSG Q RECV " << rect.left << " "
