@@ -208,6 +208,16 @@ create addr 0x45aae0
 shutdown addr 0x45aa78
 wait addr 0x45a0ac
 getInstance addr 0x44f784
+
+
+!20220519120030
+version str 2.13.0.758
+update addr 0x4589fc
+updateType str QRect
+create addr 0x45ab40
+shutdown addr 0x45aad8
+wait addr 0x45a10c
+getInstance addr 0x44f7e4
 )CONF";
 
 void read_config_file(
