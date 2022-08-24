@@ -280,6 +280,7 @@ create addr 0x4c2750
 shutdown addr 0x4c26e8
 wait addr 0x4c16f0
 getInstance addr 0x4b66b4
+@
 )CONF";
 
 void read_config_file(
@@ -291,12 +292,14 @@ void read_config_file(
   std::string line;
   unsigned int line_no = 1;
   bool version_matches = true;
+  std::streampos block_start;
 
   while (std::getline(file, line)) {
-    if (line.empty() || line[0] == '#') {
-      // Comment or empty line, ignore
+    if (line.empty() || line[0] == '#' || line[0] == '@') {
+      // Ignore comment, empty line, or block end
     } else if (line[0] == '!') {
       // Start version block
+      block_start = file.tellg();
       std::istringstream line_stream{line.substr(1)};
       std::string file_version;
       line_stream >> file_version;
@@ -325,6 +328,12 @@ void read_config_file(
         std::cerr << name << ":" << line_no << " - Ignored key of invalid "
           "type '" << type << "'\n";
       }
+    }
+    if (line[0] == '@' && !version_matches) {
+      // End of config block without a match, use last values
+      std::cerr << "Version not supported, attempting previous version config\n";
+      file.seekg(block_start);
+      version_matches = true;
     }
     ++line_no;
   }
