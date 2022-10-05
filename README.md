@@ -70,7 +70,7 @@ Xochitl function name | Xochitl function role | Notes
 The client and the server both ship the [hardcoded addresses](https://github.com/ddvk/remarkable2-framebuffer/blob/master/src/shared/config.cpp#L13) for these functions for various releases.
 If you get a message saying `Missing address for function […]`, it means that the release you’re running is not yet supported. Please report this in [this dedicated thread](https://github.com/ddvk/remarkable2-framebuffer/issues/18).
 
-You can manually locate the addresses of the functions listed above by looking at the disassembly and then add a configuration entry to make remarkable2-framebuffer work with your release.
+You can manually locate the addresses of the functions listed above by [looking at the disassembly and then add a configuration entry to make remarkable2-framebuffer work with your release](tutorial).
 In addition to the hardcoded configuration entries, the client and the server will look for addresses in configuration files in the following locations:
 
 * `/usr/share/rm2fb.conf`
