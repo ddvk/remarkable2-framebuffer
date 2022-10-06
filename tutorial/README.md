@@ -5,7 +5,7 @@ to find the offsets required for rm2fb to work.
 
 The details and screenshots use Ghidra, an open-source Java-based reverse-engineering program that runs on Linux, Windows, and Mac OS X.
 
-Before starting this tutorial, [download and install Ghidra](https://github.com/NationalSecurityAgency/ghidra)
+Before starting this tutorial, [download and install Ghidra](https://www.ghidra-sre.org)
 
 ## Setup
 
