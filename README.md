@@ -66,6 +66,7 @@ Xochitl function name | Xochitl function role | Notes
 `wait` | Waits until the update-handling threads have started. This function is replaced by the client shim with a no-op to avoid conflicting with the server. | Calls `usleep(1000)`.
 `shutdown` | Stops the update-handling threads. This function is replaced by the client shim with a no-op to avoid conflicting with the server. | Uses the string `Shutting down...`.
 `getInstance` | Retrieves the instance of the singleton SWTCON class. This function is used by the server to interact with the screen. | Calls a function that itself calls `create` and `wait`.
+`notify` | Called when the framebuffer has been updated, used for the Qt signal/slot connections needed for ScreenShare to work | 
 
 The client and the server both ship the [hardcoded addresses](https://github.com/ddvk/remarkable2-framebuffer/blob/master/src/shared/config.cpp#L13) for these functions for various releases.
 If you get a message saying `Missing address for function […]`, it means that the release you’re running is not yet supported. Please report this in [this dedicated thread](https://github.com/ddvk/remarkable2-framebuffer/issues/18).

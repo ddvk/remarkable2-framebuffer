@@ -36,6 +36,7 @@ Before starting this tutorial, [download and install Ghidra](https://www.ghidra-
      - ![Search Memory](images/05-search-memory.png)
    - in "Search Value", put the *exact* search string with no typos. Partial search is okay, just be aware you might find partial string matches in other sections of code
      - `update` search string: `Unable to complete update: invalid waveform (`
+     - `notify` is the second function in the switch, case 8 in the `update` function
      - `create` search string: `Unable to start generator thread\n`
      - `shutdown` search string: `Shutting down...`
    - Click "Next". You should only find one result.

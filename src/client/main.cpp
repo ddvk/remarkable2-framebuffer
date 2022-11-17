@@ -247,7 +247,10 @@ bool _Z7qputenvPKcRK10QByteArray(const char *name, const QByteArray &val) {
   return orig_fn(name, val);
 }
 
-void new_update_int4(void*, int x1, int y1, int x2, int y2, int waveform, int flags) {
+// called when the framebuffer is updated
+typedef uint32_t (*NotifyFunc)(void*, void*);
+NotifyFunc f_notify = 0;
+void new_update_int4(void* arg, int x1, int y1, int x2, int y2, int waveform, int flags) {
 #ifdef DEBUG
   std::cerr << "UPDATE HOOK CALLED" << std::endl;
   std::cerr << "x " << x1 << " " << x2 << std::endl;
@@ -263,6 +266,11 @@ void new_update_int4(void*, int x1, int y1, int x2, int y2, int waveform, int fl
   data.waveform = waveform;
   data.flags = flags;
   MSGQ.send(data);
+
+  if (f_notify != 0) {
+    QRect someRect(x1,y1, x2-x1, y2-y1) ;
+    f_notify(arg, &someRect);
+  }
 }
 
 void new_update_QRect(void* arg, QRect& rect, int waveform, bool flags) {
@@ -346,6 +354,13 @@ void intercept_xochitl(const Config& config) {
   replace_func(interceptor, config, "create", (void*) new_create_threads);
   replace_func(interceptor, config, "shutdown", (void*) new_shutdown);
   replace_func(interceptor, config, "wait", (void*) new_wait);
+  
+  auto search = config.find("notify");
+  if (search == config.end()) {
+    std::cerr << "missing notify function, screenshare won't work" << std::endl;
+  } else {
+    f_notify = (NotifyFunc) std::get<void*>(search->second);
+  }
 }
 
 __attribute__((visibility("default")))
