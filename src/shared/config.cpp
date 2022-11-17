@@ -352,6 +352,7 @@ create addr 0x4e7520
 shutdown addr 0x4e74b8
 wait addr 0x4e64c0
 getInstance addr 0x4db484
+notify addr 0x4d98a4
 
 )CONF";
 
