@@ -308,6 +308,15 @@ shutdown addr 0x4c26e8
 wait addr 0x4c16f0
 getInstance addr 0x4b66b4
 
+!20220929180236
+version str 2.14.4.46
+update addr 0x4c0a0c
+updateType str QRect
+create addr 0x4c3630
+shutdown addr 0x4c35c8
+wait addr 0x4c25d0
+getInstance addr 0x4b7594
+
 !20220909155240
 version str 2.15.0.1011
 update addr 0x4e411c
@@ -353,6 +362,33 @@ shutdown addr 0x4e74b8
 wait addr 0x4e64c0
 getInstance addr 0x4db484
 notify addr 0x4d98a4
+
+!20221116102140
+version str 3.0.2.1253
+update addr 0x55200c
+updateType str QRect
+create addr 0x555148
+shutdown addr 0x5550d8
+wait addr 0x553ff0
+getInstance addr 0x548b94
+
+!20221208102714
+version str 3.0.4.1305
+update addr 0x552f74
+updateType str QRect
+create addr 0x5560b0
+shutdown addr 0x556040
+wait addr 0x554f58
+getInstance addr 0x549674
+
+!20221219100426
+version	str 3.1.0.1346
+update addr 0x52d90c
+updateType str QRect
+create addr 0x530a90
+shutdown addr 0x530a20
+wait addr 0x52f938
+getInstance addr 0x5244d4
 
 )CONF";
 
