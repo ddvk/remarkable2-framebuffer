@@ -380,6 +380,8 @@ create addr 0x5560b0
 shutdown addr 0x556040
 wait addr 0x554f58
 getInstance addr 0x549674
+notify addr 0x552f74
+
 
 !20221219100426
 version	str 3.1.0.1346
