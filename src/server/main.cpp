@@ -33,56 +33,70 @@ const int BYTES_PER_PIXEL = sizeof(uint16_t);
 uint16_t *shared_mem;
 
 void doUpdate(SwtFB &fb, const swtfb_update &s) {
-  auto mxcfb_update = s.mdata.update;
-  auto rect = mxcfb_update.update_region;
+  // Taken from KOreader
+  static const int WAVEFORM_MODE_INIT = 0;
+  static const int WAVEFORM_MODE_DU = 1;
+  static const int WAVEFORM_MODE_GC16 = 2;
+  static const int WAVEFORM_MODE_GL16 = 3;
+  static const int WAVEFORM_MODE_A2 = 4;
+
+  auto data = s.mdata.update;
+  const auto& rect = data.update_region;
 
 #ifdef DEBUG_DIRTY
   std::cerr << "Dirty Region: " << rect.left << " " << rect.top << " "
             << rect.width << " " << rect.height << endl;
 #endif
 
+
   // There are three update modes on the rm2. But they are mapped to the five
   // rm1 modes as follows:
   //
-  // 0: init (same as GL16)
-  // 1: DU - direct update, fast
-  // 2: GC16 - high fidelity (slow)
-  // 3: GL16 - what the rm is using
-  // 8: highlight (same as high fidelity)
-
-  int waveform = mxcfb_update.waveform_mode;
-  if (waveform > 3 && waveform != 8) {
-    waveform = 3;
-    fb.ClearGhosting();
-  }
-
-  if (waveform < 0) {
-    waveform = 3;
-    fb.ClearGhosting();
-  }
+  // 0: DU
+  // 1: GC16: High fidelity / init with full refresh flag.
+  // 2: GL16: Faster grayscale
+  // 3: A2?: Pan & Zoom mode, 3.3+ GC16 mode
 
   // full = 1, partial = 0
-  auto update_mode = mxcfb_update.update_mode;
+  int flags = data.update_mode == UPDATE_MODE_FULL ? 0x1 : 0x0;
 
-  auto flags = update_mode & 0x1;
+  // old translation
+  int waveform = [&] {
+    switch (data.waveform_mode) {
+      case WAVEFORM_MODE_DU:
+        return 1;
+      case WAVEFORM_MODE_GC16:
+        return 2;
+      default:
+        fb.ClearGhosting();
+        return 3;
+      case 8:
+        return 8;
+    }
+  }();
+
 
   // TODO: Get sync from client (wait for second ioctl? or look at stack?)
   // There are only two occasions when the original rm1 library sets sync to
   // true. Currently we detect them by the other data. Ideally we should
   // correctly handle the corresponding ioctl (empty rect and flags == 2?).
-  if (waveform == /*init*/ 0 && update_mode == /* full */ 1) {
+  if (data.waveform_mode == WAVEFORM_MODE_INIT &&
+      data.update_mode == UPDATE_MODE_FULL) {
     flags |= 2;
     std::cerr << "SERVER: sync" << std::endl;
   } else if (rect.left == 0 && rect.top > 1800 &&
-             waveform == /* grayscale */ 3 && update_mode == /* full */ 1) {
+             (data.waveform_mode == WAVEFORM_MODE_GL16 ||
+              data.waveform_mode == WAVEFORM_MODE_GC16) &&
+             data.update_mode == UPDATE_MODE_FULL) {
     std::cerr << "server sync, x2: " << rect.width << " y2: " << rect.height
               << std::endl;
     flags |= 2;
   }
 
-  if (waveform == /* fast */ 1 && update_mode == /* partial */ 0) {
+  if (data.waveform_mode == WAVEFORM_MODE_DU &&
+      data.update_mode == UPDATE_MODE_PARTIAL) {
     // fast draw
-    flags = 4;
+    flags |= 4;
   }
 
 #ifdef DEBUG
@@ -95,6 +109,7 @@ void doUpdate(SwtFB &fb, const swtfb_update &s) {
 #endif
 
   fb.DrawRaw(rect.left, rect.top, rect.width, rect.height, waveform, flags);
+
 }
 
 extern "C" {
