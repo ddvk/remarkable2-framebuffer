@@ -21,7 +21,7 @@ for manual installation.
 
 ## Set up build environment
 
-[set up remarkable toolchain](https://remarkablewiki.com/devel/qt_creator#toolchain)
+[set up remarkable toolchain]([https://remarkablewiki.com/devel/qt_creator#toolchain](https://remarkable.guide/devel/toolchains.html))
 
 
 ## Building
@@ -109,7 +109,7 @@ probably not, but no guarantees
 
 * [what's up with server/client API?](https://github.com/ddvk/remarkable2-framebuffer/issues/4)
 
-* [where can i find more information on the framebuffer?](https://remarkablewiki.com/tech/rm2_framebuffer)
+* [where can i find more information on the framebuffer?]([https://remarkablewiki.com/tech/rm2_framebuffer](https://web.archive.org/web/20230619082431/https://remarkablewiki.com/tech/rm2_framebuffer))
 
 * [what about implementing an open source SWTCON?](https://github.com/timower/rM2-stuff/)
 
