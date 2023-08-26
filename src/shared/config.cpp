@@ -411,6 +411,18 @@ wait addr 0x559d40
 getInstance addr 0x54e414
 notify addr 0x54c918
 
+!20230414143852
+version str 3.3.2.1666
+update addr 0x5583c8
+updateType str QRect
+create addr 0x55b504
+shutdown addr 0x55b494
+wait addr 0x55a39c
+getInstance addr 0x54eeac
+notify addr 0x558464
+waveformClass str EPFramebuffer::Waveform
+remapWave2to5 str 1
+
 )CONF";
 
 void read_config_file(

@@ -22,7 +22,11 @@ class SwtFB {
   const int maxWidth = 1404;
   const int maxHeight = 1872;
 
+  std::string WAVEFORM_MODE = "";
+
 public:
+  bool remapWave2to5 = false;
+
   SwtFB()
   : config(read_config()) {}
 
@@ -38,6 +42,19 @@ public:
     void* address = std::get<void*>(search->second);
     f_getInstance = (uint32_t * (*)(void)) address;
     std::cerr << "getInstance() at address: " << address << '\n';
+
+
+    auto waveformMode = config.find("waveformClass");
+    if (waveformMode != config.end()) {
+      std::cerr << "Found waveform class " << std::endl;
+      WAVEFORM_MODE = std::get<string>(waveformMode->second);
+    } else {
+      WAVEFORM_MODE = string{"EPFramebuffer::WaveformMode"};
+    }
+    std::cerr << "Using waveform mode " << WAVEFORM_MODE << std::endl;
+
+    remapWave2to5 = config.find("remapWave2to5") != config.end();
+
     return true;
   }
 
@@ -64,7 +81,7 @@ public:
 
   void SendUpdate(const QRect &rect, int waveform, int flags) const {
     // Method idx == 1
-    QGenericArgument argWaveform("EPFramebuffer::WaveformMode", &waveform);
+    QGenericArgument argWaveform(WAVEFORM_MODE.c_str(), &waveform);
     QGenericArgument argUpdateMode("EPFramebuffer::UpdateFlags", &flags);
     QMetaObject::invokeMethod(instance, "sendUpdate", Qt::DirectConnection,
                               Q_ARG(QRect, rect), argWaveform, argUpdateMode);

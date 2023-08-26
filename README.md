@@ -23,7 +23,6 @@ for manual installation.
 
 [set up remarkable toolchain](https://remarkable.guide/devel/toolchains.html)
 
-
 ## Building
 
 Source the remarkable toolchain (example below) and run the following (replacing ${GITROOT} with the directory you have checked the repository out to)
