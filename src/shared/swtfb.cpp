@@ -25,6 +25,8 @@ class SwtFB {
   std::string WAVEFORM_MODE = "";
 
 public:
+  bool remapWave2to5 = false;
+
   SwtFB()
   : config(read_config()) {}
 
@@ -50,6 +52,8 @@ public:
       WAVEFORM_MODE = string{"EPFramebuffer::WaveformMode"};
     }
     std::cerr << "Using waveform mode " << WAVEFORM_MODE << std::endl;
+
+    remapWave2to5 = config.find("remapWave2to5") != config.end();
 
     return true;
   }

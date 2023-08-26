@@ -421,6 +421,7 @@ wait addr 0x55a39c
 getInstance addr 0x54eeac
 notify addr 0x558464
 waveformClass str EPFramebuffer::Waveform
+remapWave2to5 str 1
 
 )CONF";
 

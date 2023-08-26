@@ -66,6 +66,10 @@ void doUpdate(SwtFB &fb, const swtfb_update &s) {
       case WAVEFORM_MODE_DU:
         return 1;
       case WAVEFORM_MODE_GC16:
+        if (fb.remapWave2to5) {
+          return 5;
+        }
+
         return 2;
       default:
         fb.ClearGhosting();
