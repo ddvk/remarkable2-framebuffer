@@ -41,6 +41,9 @@ extern "C" {
 
 __attribute__((constructor))
 void init() {
+  if(getenv("RM2FB_DISABLE") != nullptr){
+    return;
+  }
   std::ios_base::Init i;
 
   std::ifstream device_id_file{"/sys/devices/soc0/machine"};
