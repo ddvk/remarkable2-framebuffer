@@ -36,7 +36,6 @@ constexpr auto BYTES_PER_PIXEL = sizeof(*SHARED_BUF);
 bool IN_XOCHITL = false;
 bool DO_WAIT_IOCTL = true;
 bool ON_RM2 = false;
-bool ENABLED = false;
 
 extern "C" {
 
@@ -45,7 +44,6 @@ void init() {
   if(getenv("RM2FB_DISABLE") != nullptr){
     return;
   }
-  ENABLED = true;
   std::ios_base::Init i;
 
   std::ifstream device_id_file{"/sys/devices/soc0/machine"};
