@@ -9,7 +9,7 @@ Before starting this tutorial, [download and install Ghidra](https://www.ghidra-
 
 ## Setup
 
-1. Copy the contents of `/etc/version` from your reMarkable 2. It should look like a date/time string, e.g. `20220921101204`. That's what will go in the first `!` line of the configuration entry you'll add to this project.
+1. run `grep REMARKABLE_RELEASE_VERSION /usr/share/remarkable/update.conf | cut -d= -f2` on your reMarkable 2, it will output the version number of the device. The first line of the configuration you add to this project should be `!` followed by the version number.
 2. Copy the file `/usr/bin/xochitl` from your reMarkable 2 onto your machine
 3. Run Ghidra
 4. Menu "File > New Project" ("Non-shared", pick any directory and name you want)
@@ -87,8 +87,7 @@ Before starting this tutorial, [download and install Ghidra](https://www.ghidra-
 
 With the hex code offsets of all five functions, you can now create a new configuration entry. Example entry:
 ```
-!20220921101206
-version str 2.14.3.1047
+!2.14.3.1047
 update addr 0x4bfb2c
 updateType str QRect
 create addr 0x4c2750
