@@ -166,7 +166,7 @@ public:
     swtfb_msg.mdata.update = msg;
 
 #ifdef DEBUG_TIMING
-    swtfb_msg.ms = get_now();
+    swtfb_msg.mdata.ms = get_now();
 #endif
     int wrote = msgsnd(msqid, (void *)&swtfb_msg, sizeof(swtfb_msg.mdata.update), 0);
     if (wrote != 0) {
@@ -179,8 +179,8 @@ public:
     errno = 0;
     auto len = msgrcv(msqid, &buf, sizeof(buf.mdata), 0, MSG_NOERROR);
 #ifdef DEBUG_TIMING
-    auto rect = buf.update.update_region;
-    cerr << get_now() - buf.ms << "ms MSG Q RECV " << rect.left << " "
+    auto rect = buf.mdata.update.update_region;
+    cerr << get_now() - buf.mdata.ms << "ms MSG Q RECV " << rect.left << " "
          << rect.top << " " << rect.width << " " << rect.height << endl;
 #endif
     if (len >= 0) {
