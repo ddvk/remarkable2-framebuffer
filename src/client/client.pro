@@ -4,8 +4,8 @@
 
 TEMPLATE = lib
 TARGET = rm2fb_client
-VERSION = 1.1.0
 INCLUDEPATH += .
+include(../../version.pri)
 
 # The following define makes your compiler warn you if you use any
 # feature of Qt which has been marked as deprecated (the exact warnings

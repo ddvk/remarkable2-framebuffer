@@ -1,5 +1,7 @@
 TEMPLATE = subdirs
 
+include(version.pri)
+
 SUBDIRS = \
 	src/loader \   # relative paths
 	src/server \
