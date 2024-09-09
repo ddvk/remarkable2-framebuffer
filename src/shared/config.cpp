@@ -478,5 +478,26 @@ Config read_config() {
     }
   }
 
+  Config config = read_config(version);
+
+  if (!config.empty()){
+    return config;
+  }
+
+#ifdef DEBUG
+    std::cerr
+      << "Unable to find config for version number, looking for old build date instead"
+      << std::endl;
+#endif
+
+  std::ifstream version_file_buf{"/etc/version"};
+
+  if (!version_file_buf) {
+    std::cerr << "/etc/version - " << std::strerror(errno) << "\n";
+    std::exit(-1);
+  }
+
+  std::getline(version_file_buf, version);
+
   return read_config(version);
 }
