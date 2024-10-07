@@ -6,3 +6,4 @@ rm2-framebuffer
 *.so.*
 *.so
 dist
+rm2fb*.tar.gz

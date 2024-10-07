@@ -4,6 +4,7 @@ on:
   push:
     tags:
         - 'v*.*.*'
+  pull_request:
 
 jobs:
   build:
@@ -12,11 +13,17 @@ jobs:
     container: ghcr.io/toltec-dev/qt
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Build 
         run: |
           ./dist.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: dist/*
+          if-no-files-found: error
 
       - name: Release
         uses: softprops/action-gh-release@v1
